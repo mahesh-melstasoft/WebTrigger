@@ -24,20 +24,35 @@ export async function GET(
         // Execute the callback: call the callbackUrl
         try {
             const response = await axios.get(callback.callbackUrl);
+            
+            // Get client information
+            const clientIP = request.headers.get('x-forwarded-for') || 
+                           request.headers.get('x-real-ip') || 
+                           'unknown';
+            const userAgent = request.headers.get('user-agent') || 'unknown';
+            const referer = request.headers.get('referer') || 'unknown';
+            
             await prisma.log.create({
                 data: {
                     event: 'Callback triggered',
-                    details: `Called ${callback.callbackUrl}, status: ${response.status}`,
+                    details: `Called ${callback.callbackUrl}, status: ${response.status} | IP: ${clientIP} | User-Agent: ${userAgent} | Referer: ${referer}`,
                     callbackId: callback.id,
                 },
             });
             return NextResponse.json({ message: 'Callback executed successfully', data: response.data });
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            
+            // Get client information for error logging
+            const clientIP = request.headers.get('x-forwarded-for') || 
+                           request.headers.get('x-real-ip') || 
+                           'unknown';
+            const userAgent = request.headers.get('user-agent') || 'unknown';
+            
             await prisma.log.create({
                 data: {
                     event: 'Callback failed',
-                    details: `Failed to call ${callback.callbackUrl}: ${errorMessage}`,
+                    details: `Failed to call ${callback.callbackUrl}: ${errorMessage} | IP: ${clientIP} | User-Agent: ${userAgent}`,
                     callbackId: callback.id,
                 },
             });
