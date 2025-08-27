@@ -24,14 +24,14 @@ export async function GET(
         // Execute the callback: call the callbackUrl
         try {
             const response = await axios.get(callback.callbackUrl);
-            
+
             // Get client information
-            const clientIP = request.headers.get('x-forwarded-for') || 
-                           request.headers.get('x-real-ip') || 
-                           'unknown';
+            const clientIP = request.headers.get('x-forwarded-for') ||
+                request.headers.get('x-real-ip') ||
+                'unknown';
             const userAgent = request.headers.get('user-agent') || 'unknown';
             const referer = request.headers.get('referer') || 'unknown';
-            
+
             await prisma.log.create({
                 data: {
                     event: 'Callback triggered',
@@ -42,13 +42,13 @@ export async function GET(
             return NextResponse.json({ message: 'Callback executed successfully', data: response.data });
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            
+
             // Get client information for error logging
-            const clientIP = request.headers.get('x-forwarded-for') || 
-                           request.headers.get('x-real-ip') || 
-                           'unknown';
+            const clientIP = request.headers.get('x-forwarded-for') ||
+                request.headers.get('x-real-ip') ||
+                'unknown';
             const userAgent = request.headers.get('user-agent') || 'unknown';
-            
+
             await prisma.log.create({
                 data: {
                     event: 'Callback failed',

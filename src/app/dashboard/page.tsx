@@ -20,7 +20,8 @@ import {
     CheckCircle,
     XCircle,
     Webhook,
-    Activity
+    Activity,
+    Settings
 } from 'lucide-react';
 
 interface Callback {
@@ -165,6 +166,12 @@ export default function Dashboard() {
                                 <Link href="/dashboard/logs">
                                     <FileText className="h-4 w-4 mr-2" />
                                     View Logs
+                                </Link>
+                            </Button>
+                            <Button asChild variant="outline">
+                                <Link href="/settings">
+                                    <Settings className="h-4 w-4 mr-2" />
+                                    Settings
                                 </Link>
                             </Button>
                             <Button asChild>

@@ -27,9 +27,9 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                Callback Manager
+                WebTrigger
               </h1>
-              <p className="text-gray-600 mt-2">Redirecting you to the right place...</p>
+              <p className="text-gray-600 mt-2">Smart webhook management made simple</p>
             </div>
             <Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-500" />
           </div>
