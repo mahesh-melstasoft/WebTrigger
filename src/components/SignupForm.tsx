@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Mail, Lock, Smartphone, ArrowLeft } from 'lucide-react';
+import { Loader2, Mail, Lock, Smartphone } from 'lucide-react';
 
 export default function SignupForm() {
     const [email, setEmail] = useState('');
@@ -36,7 +37,7 @@ export default function SignupForm() {
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setLoading(false);
@@ -59,9 +60,11 @@ export default function SignupForm() {
                     <CardContent className="space-y-6">
                         <div className="flex justify-center">
                             <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                <img
+                                <Image
                                     src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCodeUrl)}`}
                                     alt="QR Code"
+                                    width={192}
+                                    height={192}
                                     className="w-48 h-48"
                                 />
                             </div>

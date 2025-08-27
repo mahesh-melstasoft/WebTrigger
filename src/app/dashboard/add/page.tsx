@@ -41,7 +41,7 @@ export default function AddCallback() {
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setLoading(false);

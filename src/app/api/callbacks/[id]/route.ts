@@ -4,7 +4,7 @@ import { getUserFromToken } from '@/lib/auth';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const userId = await getUserFromToken(request);
@@ -12,8 +12,10 @@ export async function GET(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { id } = await params;
+
         const callback = await prisma.callback.findFirst({
-            where: { id: params.id, userId },
+            where: { id, userId },
             include: { logs: { orderBy: { createdAt: 'desc' } } },
         });
 
@@ -30,7 +32,7 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const userId = await getUserFromToken(request);
@@ -38,10 +40,11 @@ export async function PUT(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { id } = await params;
         const { name, callbackUrl, activeStatus } = await request.json();
 
         const callback = await prisma.callback.updateMany({
-            where: { id: params.id, userId },
+            where: { id, userId },
             data: {
                 ...(name && { name }),
                 ...(callbackUrl && { callbackUrl }),
@@ -54,7 +57,7 @@ export async function PUT(
         }
 
         const updatedCallback = await prisma.callback.findUnique({
-            where: { id: params.id },
+            where: { id },
         });
 
         return NextResponse.json(updatedCallback);
@@ -66,7 +69,7 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const userId = await getUserFromToken(request);
@@ -74,8 +77,10 @@ export async function DELETE(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { id } = await params;
+
         const callback = await prisma.callback.deleteMany({
-            where: { id: params.id, userId },
+            where: { id, userId },
         });
 
         if (callback.count === 0) {

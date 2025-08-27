@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,22 +31,7 @@ export default function LogsPage() {
     const [selectedCallback, setSelectedCallback] = useState<string>('all');
     const router = useRouter();
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-
-        fetchCallbacks();
-        fetchLogs();
-    }, [router]);
-
-    useEffect(() => {
-        fetchLogs();
-    }, [selectedCallback]);
-
-    const fetchCallbacks = async () => {
+    const fetchCallbacks = useCallback(async () => {
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/callbacks', {
@@ -57,12 +42,12 @@ export default function LogsPage() {
                 const data = await response.json();
                 setCallbacks(data);
             }
-        } catch (err) {
-            console.error('Failed to fetch callbacks:', err);
+        } catch {
+            console.error('Failed to fetch callbacks');
         }
-    };
+    }, []);
 
-    const fetchLogs = async () => {
+    const fetchLogs = useCallback(async () => {
         const token = localStorage.getItem('token');
         try {
             const url = selectedCallback === 'all'
@@ -82,12 +67,27 @@ export default function LogsPage() {
             } else {
                 setError('Failed to fetch logs');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedCallback, router]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+
+        fetchCallbacks();
+        fetchLogs();
+    }, [router, fetchCallbacks, fetchLogs]);
+
+    useEffect(() => {
+        fetchLogs();
+    }, [fetchLogs]);
 
     const getEventIcon = (event: string) => {
         if (event.includes('triggered')) return <CheckCircle className="h-4 w-4 text-green-500" />;

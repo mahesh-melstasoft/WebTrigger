@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,13 +28,11 @@ export default function EditCallback() {
     const [fetchLoading, setFetchLoading] = useState(true);
     const router = useRouter();
     const params = useParams();
-    const id = params.id as string;
 
-    useEffect(() => {
-        fetchCallback();
-    }, [id]);
+    // Get the id from params asynchronously
+    const [id, setId] = useState<string>('');
 
-    const fetchCallback = async () => {
+    const fetchCallback = useCallback(async () => {
         const token = localStorage.getItem('token');
         try {
             const response = await fetch(`/api/callbacks/${id}`, {
@@ -50,12 +48,26 @@ export default function EditCallback() {
             } else {
                 setError('Failed to fetch callback');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setFetchLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        const getParams = async () => {
+            const resolvedParams = await params;
+            setId(resolvedParams.id as string);
+        };
+        getParams();
+    }, [params]);
+
+    useEffect(() => {
+        if (id) {
+            fetchCallback();
+        }
+    }, [id, fetchCallback]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -80,7 +92,7 @@ export default function EditCallback() {
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setLoading(false);
@@ -95,8 +107,8 @@ export default function EditCallback() {
             try {
                 await navigator.clipboard.writeText(url);
                 alert('Trigger URL copied to clipboard!');
-            } catch (err) {
-                console.error('Failed to copy to clipboard:', err);
+            } catch {
+                console.error('Failed to copy to clipboard');
                 fallbackCopyTextToClipboard(url);
             }
         } else {
@@ -122,8 +134,8 @@ export default function EditCallback() {
             } else {
                 alert('Failed to copy URL. Please copy manually: ' + text);
             }
-        } catch (err) {
-            console.error('Fallback copy failed:', err);
+        } catch {
+            console.error('Fallback copy failed');
             alert('Failed to copy URL. Please copy manually: ' + text);
         }
 

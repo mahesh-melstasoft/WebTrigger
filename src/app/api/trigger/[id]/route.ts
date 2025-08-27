@@ -4,13 +4,13 @@ import axios from 'axios';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: Promise<{ token: string }> }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const { token } = await params;
+        const { id } = await params;
 
         const callback = await prisma.callback.findUnique({
-            where: { triggerToken: token },
+            where: { id },
         });
 
         if (!callback) {

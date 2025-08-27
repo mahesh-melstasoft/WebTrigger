@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,17 +38,7 @@ export default function Dashboard() {
     const [error, setError] = useState('');
     const router = useRouter();
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
-
-        fetchCallbacks();
-    }, [router]);
-
-    const fetchCallbacks = async () => {
+    const fetchCallbacks = useCallback(async () => {
         const token = localStorage.getItem('token');
         try {
             const response = await fetch('/api/callbacks', {
@@ -64,12 +54,22 @@ export default function Dashboard() {
             } else {
                 setError('Failed to fetch callbacks');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setLoading(false);
         }
-    };
+    }, [router]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+
+        fetchCallbacks();
+    }, [router, fetchCallbacks]);
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this callback?')) return;
@@ -86,7 +86,7 @@ export default function Dashboard() {
             } else {
                 setError('Failed to delete callback');
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         }
     };
@@ -104,8 +104,8 @@ export default function Dashboard() {
             try {
                 await navigator.clipboard.writeText(url);
                 alert('Trigger URL copied to clipboard!');
-            } catch (err) {
-                console.error('Failed to copy to clipboard:', err);
+            } catch {
+                console.error('Failed to copy to clipboard');
                 fallbackCopyTextToClipboard(url);
             }
         } else {
@@ -131,8 +131,8 @@ export default function Dashboard() {
             } else {
                 alert('Failed to copy URL. Please copy manually: ' + text);
             }
-        } catch (err) {
-            console.error('Fallback copy failed:', err);
+        } catch {
+            console.error('Fallback copy failed');
             alert('Failed to copy URL. Please copy manually: ' + text);
         }
 

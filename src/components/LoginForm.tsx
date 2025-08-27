@@ -37,7 +37,7 @@ export default function LoginForm() {
             } else {
                 setError(data.error);
             }
-        } catch (err) {
+        } catch {
             setError('An error occurred');
         } finally {
             setLoading(false);
@@ -122,7 +122,7 @@ export default function LoginForm() {
                     </form>
 
                     <div className="mt-6 text-center text-sm">
-                        <span className="text-gray-600">Don't have an account? </span>
+                        <span className="text-gray-600">Don&apos;t have an account? </span>
                         <Button variant="link" className="p-0 h-auto font-normal" asChild>
                             <a href="/signup">Sign up</a>
                         </Button>
