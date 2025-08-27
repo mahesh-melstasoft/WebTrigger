@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { prisma } from '@/lib/prisma';
 import { authMiddleware } from '@/lib/auth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -24,6 +23,9 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
+
+        // Dynamic import to avoid build-time initialization
+        const { prisma } = await import('@/lib/prisma');
 
         // Get plan details
         const plan = await prisma.subscriptionPlan.findUnique({

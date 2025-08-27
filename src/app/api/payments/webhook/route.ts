@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { prisma } from '@/lib/prisma';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: '2025-07-30.basil',
@@ -73,6 +72,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
 
     try {
+        // Dynamic import to avoid build-time initialization
+        const { prisma } = await import('@/lib/prisma');
+
         // Get plan details
         const plan = await prisma.subscriptionPlan.findUnique({
             where: { id: planId },
@@ -123,6 +125,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     try {
+        // Dynamic import to avoid build-time initialization
+        const { prisma } = await import('@/lib/prisma');
+
         const existingSubscription = await prisma.subscription.findUnique({
             where: { stripeSubscriptionId: subscription.id },
         });
@@ -152,6 +157,9 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
     try {
+        // Dynamic import to avoid build-time initialization
+        const { prisma } = await import('@/lib/prisma');
+
         await prisma.subscription.update({
             where: { stripeSubscriptionId: subscription.id },
             data: {

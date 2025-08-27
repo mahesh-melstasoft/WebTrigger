@@ -1,7 +1,6 @@
 import speakeasy from 'speakeasy';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { prisma } from '@/lib/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -32,6 +31,9 @@ export async function authMiddleware(request: Request): Promise<AuthResult> {
 
         // Verify JWT token
         const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+
+        // Dynamic import to avoid build-time initialization
+        const { prisma } = await import('@/lib/prisma');
 
         // Get user from database
         const user = await prisma.user.findUnique({
