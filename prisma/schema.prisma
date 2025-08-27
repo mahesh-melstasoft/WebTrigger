@@ -12,16 +12,16 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  password      String
-  secret        String?   // For TOTP
-  role          UserRole  @default(FREE)
+  id             String        @id @default(cuid())
+  email          String        @unique
+  password       String
+  secret         String? // For TOTP
+  role           UserRole      @default(FREE)
   subscriptionId String?
-  subscription  Subscription? @relation
-  isActive      Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  subscription   Subscription? @relation
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
   callbacks Callback[]
 }
@@ -34,18 +34,18 @@ enum UserRole {
 }
 
 model Subscription {
-  id                String            @id @default(cuid())
-  planId            String
-  plan              SubscriptionPlan  @relation(fields: [planId], references: [id])
-  userId            String            @unique
-  user              User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeCustomerId  String?           @unique
-  stripeSubscriptionId String?        @unique
-  status            SubscriptionStatus @default(ACTIVE)
-  currentPeriodStart DateTime?
-  currentPeriodEnd   DateTime?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  id                   String             @id @default(cuid())
+  planId               String
+  plan                 SubscriptionPlan   @relation(fields: [planId], references: [id])
+  userId               String             @unique
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  status               SubscriptionStatus @default(ACTIVE)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 }
 
 enum SubscriptionStatus {
@@ -56,34 +56,34 @@ enum SubscriptionStatus {
 }
 
 model SubscriptionPlan {
-  id                String   @id @default(cuid())
-  name              String   @unique
-  description       String?
-  price             Float
-  currency          String   @default("USD")
-  interval          String   @default("month") // month, year
-  maxTriggers       Int
-  maxTimeoutDuration Int     // in seconds
-  features          String[] // JSON array of features
-  isActive          Boolean  @default(true)
-  stripePriceId     String?  @unique
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  name               String   @unique
+  description        String?
+  price              Float
+  currency           String   @default("USD")
+  interval           String   @default("month") // month, year
+  maxTriggers        Int
+  maxTimeoutDuration Int // in seconds
+  features           String[] // JSON array of features
+  isActive           Boolean  @default(true)
+  stripePriceId      String?  @unique
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   subscriptions Subscription[]
 }
 
 model Callback {
-  id           String   @id @default(cuid())
-  name         String
-  callbackUrl  String
-  activeStatus Boolean  @default(true)
-  triggerToken String?  @unique @default(uuid())
-  userId       String
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  timeoutDuration Int   @default(30000) // 30 seconds default
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id              String   @id @default(cuid())
+  name            String
+  callbackUrl     String
+  activeStatus    Boolean  @default(true)
+  triggerToken    String?  @unique @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeoutDuration Int      @default(30000) // 30 seconds default
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   logs Log[]
 }

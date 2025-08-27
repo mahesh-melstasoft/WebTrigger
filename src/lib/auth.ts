@@ -1,8 +1,70 @@
 import speakeasy from 'speakeasy';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { prisma } from '@/lib/prisma';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+
+export interface AuthUser {
+    id: string;
+    email: string;
+    role: string;
+}
+
+export interface AuthResult {
+    success: boolean;
+    user?: AuthUser;
+    error?: string;
+}
+
+export async function authMiddleware(request: Request): Promise<AuthResult> {
+    try {
+        const authHeader = request.headers.get('authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return { success: false, error: 'No authorization token provided' };
+        }
+
+        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+        if (!token) {
+            return { success: false, error: 'Invalid token format' };
+        }
+
+        // Verify JWT token
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+
+        // Get user from database
+        const user = await prisma.user.findUnique({
+            where: { id: decoded.userId },
+            select: {
+                id: true,
+                email: true,
+                role: true,
+                isActive: true,
+            },
+        });
+
+        if (!user) {
+            return { success: false, error: 'User not found' };
+        }
+
+        if (!user.isActive) {
+            return { success: false, error: 'Account is deactivated' };
+        }
+
+        return {
+            success: true,
+            user: {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+            },
+        };
+    } catch (error) {
+        console.error('Auth middleware error:', error);
+        return { success: false, error: 'Invalid or expired token' };
+    }
+}
 
 export function generateSecret() {
     return speakeasy.generateSecret({ length: 32 });

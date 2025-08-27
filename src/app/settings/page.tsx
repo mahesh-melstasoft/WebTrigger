@@ -13,15 +13,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
     ArrowLeft,
     Save,
-    Palette,
     User,
     Settings,
     Crown,
     Zap,
     Star,
     CheckCircle,
-    AlertCircle
+    AlertCircle,
+    Shield,
+    CreditCard,
+    QrCode,
 } from 'lucide-react';
+import Image from 'next/image';
 
 interface UserSettings {
     id: string;
@@ -32,6 +35,7 @@ interface UserSettings {
     appDescription: string;
     colorPalette: string;
     triggerLimit: number;
+    secret?: string | null;
     createdAt: string;
 }
 
@@ -74,21 +78,19 @@ const ACCOUNT_TYPES = [
     }
 ];
 
-const COLOR_PALETTES = [
-    { id: 'default', name: 'Default Blue', colors: ['#3b82f6', '#1d4ed8', '#dbeafe'] },
-    { id: 'green', name: 'Forest Green', colors: ['#10b981', '#059669', '#d1fae5'] },
-    { id: 'purple', name: 'Royal Purple', colors: ['#8b5cf6', '#7c3aed', '#e9d5ff'] },
-    { id: 'orange', name: 'Sunset Orange', colors: ['#f97316', '#ea580c', '#fed7aa'] },
-    { id: 'pink', name: 'Rose Pink', colors: ['#ec4899', '#db2777', '#fce7f3'] },
-    { id: 'teal', name: 'Ocean Teal', colors: ['#14b8a6', '#0d9488', '#ccfbf1'] }
-];
-
 export default function SettingsPage() {
     const [settings, setSettings] = useState<UserSettings | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+    const [totpSetup, setTotpSetup] = useState<{
+        secret: string;
+        qrCode: string;
+        otpauth_url: string;
+    } | null>(null);
+    const [totpToken, setTotpToken] = useState('');
+    const [showTotpSetup, setShowTotpSetup] = useState(false);
     const router = useRouter();
 
     const fetchSettings = useCallback(async () => {
@@ -170,6 +172,120 @@ export default function SettingsPage() {
         });
     };
 
+    const handleTotpToggle = async () => {
+        if (!settings) return;
+
+        if (settings.secret) {
+            // Disable TOTP
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/auth/totp/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ action: 'disable' }),
+                });
+
+                if (response.ok) {
+                    setSettings({ ...settings, secret: null });
+                    setSuccess('TOTP disabled successfully');
+                } else {
+                    setError('Failed to disable TOTP');
+                }
+            } catch {
+                setError('An error occurred while disabling TOTP');
+            }
+        } else {
+            // Enable TOTP
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/auth/totp/setup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ action: 'enable' }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setTotpSetup(data);
+                    setShowTotpSetup(true);
+                } else {
+                    setError('Failed to setup TOTP');
+                }
+            } catch {
+                setError('An error occurred while setting up TOTP');
+            }
+        }
+    };
+
+    const handleTotpVerify = async () => {
+        if (!settings || !totpToken) return;
+
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/api/auth/totp/verify', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ token: totpToken, action: 'verify_setup' }),
+            });
+
+            if (response.ok) {
+                setSettings({ ...settings, secret: totpSetup?.secret });
+                setShowTotpSetup(false);
+                setTotpSetup(null);
+                setTotpToken('');
+                setSuccess('TOTP enabled successfully');
+            } else {
+                setError('Invalid verification code');
+            }
+        } catch {
+            setError('An error occurred while verifying TOTP');
+        }
+    };
+
+    const handleUpgrade = async () => {
+        if (!settings) return;
+
+        if (settings.accountType === 'free') {
+            // Redirect to Stripe checkout
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/payments/create-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        planId: 'starter-plan-id', // This should be dynamic based on selected plan
+                        successUrl: `${window.location.origin}/settings?success=true`,
+                        cancelUrl: `${window.location.origin}/settings?canceled=true`,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = data.url;
+                } else {
+                    setError('Failed to create payment session');
+                }
+            } catch {
+                setError('An error occurred while processing payment');
+            }
+        } else {
+            // Redirect to Stripe customer portal
+            setError('Customer portal not implemented yet');
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -217,9 +333,10 @@ export default function SettingsPage() {
                 )}
 
                 <Tabs defaultValue="app" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-4">
+                    <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="app">App Branding</TabsTrigger>
                         <TabsTrigger value="account">Account</TabsTrigger>
+                        <TabsTrigger value="security">Security</TabsTrigger>
                         <TabsTrigger value="appearance">Appearance</TabsTrigger>
                         <TabsTrigger value="profile">Profile</TabsTrigger>
                     </TabsList>
@@ -287,9 +404,8 @@ export default function SettingsPage() {
                                         return (
                                             <Card
                                                 key={type.id}
-                                                className={`cursor-pointer transition-all ${
-                                                    isCurrent ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
-                                                }`}
+                                                className={`cursor-pointer transition-all ${isCurrent ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
+                                                    }`}
                                                 onClick={() => handleAccountTypeChange(type.id)}
                                             >
                                                 <CardHeader className="pb-3">
@@ -334,49 +450,120 @@ export default function SettingsPage() {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="appearance" className="space-y-6">
+                    <TabsContent value="security" className="space-y-6">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
-                                    <Palette className="h-5 w-5" />
-                                    Color Palette
+                                    <Shield className="h-5 w-5" />
+                                    Two-Factor Authentication
                                 </CardTitle>
                                 <CardDescription>
-                                    Choose your preferred color scheme
+                                    Add an extra layer of security to your account with TOTP
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                        <h4 className="font-medium">Google Authenticator</h4>
+                                        <p className="text-sm text-gray-600">
+                                            Use an authenticator app to generate verification codes
+                                        </p>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Badge variant={settings?.secret ? 'default' : 'secondary'}>
+                                            {settings?.secret ? 'Enabled' : 'Disabled'}
+                                        </Badge>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => handleTotpToggle()}
+                                        >
+                                            {settings?.secret ? 'Disable' : 'Enable'}
+                                        </Button>
+                                    </div>
+                                </div>
+
+                                {showTotpSetup && totpSetup && (
+                                    <Card className="border-orange-200 bg-orange-50">
+                                        <CardHeader>
+                                            <CardTitle className="flex items-center gap-2 text-orange-800">
+                                                <QrCode className="h-5 w-5" />
+                                                Setup Instructions
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="text-center">
+                                                <p className="text-sm text-orange-700 mb-4">
+                                                    Scan this QR code with your authenticator app:
+                                                </p>
+                                                <Image
+                                                    src={totpSetup.qrCode}
+                                                    alt="TOTP QR Code"
+                                                    className="mx-auto border rounded"
+                                                />
+                                            </div>
+                                            <div className="bg-white p-3 rounded border font-mono text-sm">
+                                                {totpSetup.secret}
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="totpToken">Enter verification code:</Label>
+                                                <Input
+                                                    id="totpToken"
+                                                    value={totpToken}
+                                                    onChange={(e) => setTotpToken(e.target.value)}
+                                                    placeholder="000000"
+                                                    maxLength={6}
+                                                />
+                                                <Button
+                                                    onClick={handleTotpVerify}
+                                                    disabled={totpToken.length !== 6}
+                                                    className="w-full"
+                                                >
+                                                    Verify & Enable
+                                                </Button>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <CreditCard className="h-5 w-5" />
+                                    Payment Method
+                                </CardTitle>
+                                <CardDescription>
+                                    Manage your payment information and billing
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                                    {COLOR_PALETTES.map((palette) => (
-                                        <Card
-                                            key={palette.id}
-                                            className={`cursor-pointer transition-all ${
-                                                settings.colorPalette === palette.id ? 'ring-2 ring-blue-500' : 'hover:shadow-md'
-                                            }`}
-                                            onClick={() => setSettings({ ...settings, colorPalette: palette.id })}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                                        <div>
+                                            <h4 className="font-medium">Current Plan</h4>
+                                            <p className="text-sm text-gray-600">
+                                                {ACCOUNT_TYPES.find(type => type.id === settings?.accountType)?.name || 'Free'}
+                                            </p>
+                                        </div>
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleUpgrade}
+                                            disabled={settings?.accountType === 'admin'}
                                         >
-                                            <CardHeader className="pb-3">
-                                                <CardTitle className="text-base">{palette.name}</CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="pt-0">
-                                                <div className="flex gap-2">
-                                                    {palette.colors.map((color, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="w-8 h-8 rounded-full border-2 border-white shadow-sm"
-                                                            style={{ backgroundColor: color }}
-                                                        />
-                                                    ))}
-                                                </div>
-                                                {settings.colorPalette === palette.id && (
-                                                    <div className="mt-2 flex items-center gap-2 text-green-600">
-                                                        <CheckCircle className="h-4 w-4" />
-                                                        <span className="text-sm font-medium">Selected</span>
-                                                    </div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ))}
+                                            {settings?.accountType === 'free' ? 'Upgrade' : 'Manage Billing'}
+                                        </Button>
+                                    </div>
+
+                                    {settings?.accountType !== 'free' && (
+                                        <Alert>
+                                            <CreditCard className="h-4 w-4" />
+                                            <AlertDescription>
+                                                Your subscription is managed through Stripe. Click &quot;Manage Billing&quot; to update payment methods or cancel.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
