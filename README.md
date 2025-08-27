@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Callback Manager
 
-## Getting Started
+A Vercel-deployable API with UI for managing callbacks with Google Authenticator authentication.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- **Authentication**: Signup/Login with Google Authenticator (TOTP) 2FA
+- **Callback Management**: Create, edit, delete callbacks
+- **Trigger Callbacks**: Public URLs to trigger callback functions
+- **Logging**: Record all callback executions
+- **UI**: Modern React interface with Tailwind CSS
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Database
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Users**: Email, password, TOTP secret
+- **Callbacks**: Name, callback URL, active status
+- **Logs**: Event records for each callback execution
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Endpoints
 
-## Learn More
+- `POST /api/auth/signup` - Create account
+- `POST /api/auth/login` - Login with TOTP
+- `GET /api/callbacks` - List callbacks
+- `POST /api/callbacks` - Create callback
+- `PUT /api/callbacks/[id]` - Update callback
+- `DELETE /api/callbacks/[id]` - Delete callback
+- `GET /api/trigger/[id]` - Trigger callback (public)
+- `GET /api/logs` - List logs
 
-To learn more about Next.js, take a look at the following resources:
+## Setup
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up database:
+   - For development: Update `DATABASE_URL` in `.env` to your PostgreSQL connection
+   - For Vercel: Use Vercel Postgres
+4. Run migrations: `npx prisma db push`
+5. Generate Prisma client: `npx prisma generate`
+6. Start development server: `npm run dev`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment to Vercel
 
-## Deploy on Vercel
+1. Push code to GitHub
+2. Connect repository to Vercel
+3. Add environment variables in Vercel dashboard:
+   - `DATABASE_URL`: Your Vercel Postgres connection string
+   - `JWT_SECRET`: A secure random string
+4. Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Usage
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Signup with email/password - scan QR code with authenticator app
+2. Login with email/password/TOTP code
+3. Create callbacks with name and URL
+4. Use `/api/trigger/[callback-id]` to execute callbacks
+5. View logs in the dashboard
+
+## Security
+
+- JWT authentication for API access
+- TOTP 2FA for login
+- Active status control for callbacks

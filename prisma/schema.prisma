@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  secret    String? // For TOTP
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  callbacks Callback[]
+}
+
+model Callback {
+  id           String   @id @default(cuid())
+  name         String
+  callbackUrl  String
+  activeStatus Boolean  @default(true)
+  triggerToken String?  @unique @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  logs Log[]
+}
+
+model Log {
+  id         String   @id @default(cuid())
+  event      String
+  details    String?
+  callbackId String
+  callback   Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+}
