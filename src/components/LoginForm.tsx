@@ -22,12 +22,26 @@ export default function LoginForm() {
         setLoading(true);
         setError('');
 
+        // Safety timeout - if request takes longer than 15 seconds, reset loading state
+        const safetyTimeout = setTimeout(() => {
+            setLoading(false);
+            setError('Request timed out. Please try again.');
+        }, 15000);
+
         try {
+            // Add timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
             const response = await fetch('/api/auth/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password, token }),
+                signal: controller.signal,
             });
+
+            clearTimeout(timeoutId);
+            clearTimeout(safetyTimeout); // Clear safety timeout on success
 
             const data = await response.json();
 
@@ -35,10 +49,16 @@ export default function LoginForm() {
                 localStorage.setItem('token', data.token);
                 router.push('/dashboard');
             } else {
-                setError(data.error);
+                setError(data.error || 'Login failed');
             }
-        } catch {
-            setError('An error occurred');
+        } catch (error) {
+            clearTimeout(safetyTimeout); // Clear safety timeout on error
+            console.error('Login error:', error);
+            if (error instanceof Error && error.name === 'AbortError') {
+                setError('Request timed out. Please try again.');
+            } else {
+                setError('Network error. Please check your connection and try again.');
+            }
         } finally {
             setLoading(false);
         }
