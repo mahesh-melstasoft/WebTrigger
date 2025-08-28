@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
 interface RateLimit {
@@ -11,7 +11,7 @@ interface RateLimit {
 export async function checkRateLimit(
     userId: string,
     callbackId: string
-): Promise<{ allowed: boolean; limit?: RateLimit; remaining?: any }> {
+): Promise<{ allowed: boolean; limit?: RateLimit; remaining?: number }> {
     try {
         // Get user's subscription and rate limits
         const user = await prisma.user.findUnique({

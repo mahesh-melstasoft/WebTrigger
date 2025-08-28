@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma';
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const auth = await authMiddleware(request);
@@ -12,11 +12,12 @@ export async function PUT(
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { id } = await params;
         const body = await request.json();
         const { requestsPerSecond, requestsPerMinute, requestsPerHour, requestsPerMonth, isActive } = body;
 
         const updatedLimit = await prisma.rateLimit.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 ...(requestsPerSecond !== undefined && { requestsPerSecond }),
                 ...(requestsPerMinute !== undefined && { requestsPerMinute }),
