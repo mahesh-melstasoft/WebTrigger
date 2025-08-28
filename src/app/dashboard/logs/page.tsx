@@ -15,6 +15,8 @@ interface Log {
     event: string;
     details: string | null;
     createdAt: string;
+    responseTime: number | null;
+    statusCode: number | null;
     callback: { name: string; id: string };
 }
 
@@ -188,6 +190,7 @@ export default function LogsPage() {
                                     <TableRow>
                                         <TableHead>Event</TableHead>
                                         <TableHead>Callback</TableHead>
+                                        <TableHead>Response Time</TableHead>
                                         <TableHead>Details</TableHead>
                                         <TableHead>Timestamp</TableHead>
                                     </TableRow>
@@ -211,6 +214,26 @@ export default function LogsPage() {
                                                 <span className="font-medium text-gray-900">
                                                     {log.callback.name}
                                                 </span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    {log.responseTime ? (
+                                                        <>
+                                                            <span className={`text-sm font-medium ${log.responseTime < 1000 ? 'text-green-600' :
+                                                                    log.responseTime < 5000 ? 'text-yellow-600' : 'text-red-600'
+                                                                }`}>
+                                                                {log.responseTime}ms
+                                                            </span>
+                                                            {log.statusCode && (
+                                                                <Badge variant="outline" className="text-xs">
+                                                                    {log.statusCode}
+                                                                </Badge>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-gray-400 text-sm">-</span>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                             <TableCell>
                                                 <div className="max-w-xs">

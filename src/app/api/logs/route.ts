@@ -19,12 +19,18 @@ export async function GET(request: NextRequest) {
                     ...(callbackId && { id: callbackId }),
                 },
             },
-            include: {
+            orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                event: true,
+                details: true,
+                createdAt: true,
+                responseTime: true,
+                statusCode: true,
                 callback: {
                     select: { name: true, id: true },
                 },
             },
-            orderBy: { createdAt: 'desc' },
         });
 
         return NextResponse.json(logs);

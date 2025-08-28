@@ -27,6 +27,7 @@ model User {
 
   callbacks     Callback[]
   rateLimitLogs RateLimitLog[]
+  apiKeys       ApiKey[]
 }
 
 enum UserRole {
@@ -118,6 +119,21 @@ model RateLimit {
   isActive          Boolean          @default(true)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+}
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions String[] // Array of permissions: ['read', 'write', 'admin']
+  expiresAt   DateTime?
+  lastUsedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("api_keys")
 }
 
 model RateLimitLog {

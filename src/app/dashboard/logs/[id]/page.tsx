@@ -13,6 +13,8 @@ interface LogDetails {
     event: string;
     details: string | null;
     createdAt: string;
+    responseTime: number | null;
+    statusCode: number | null;
     callback: {
         id: string;
         name: string;
@@ -179,6 +181,29 @@ export default function LogDetailsPage() {
                                         </span>
                                     </div>
                                 </div>
+                                {log.responseTime && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Response Time</label>
+                                        <div className="mt-1 flex items-center gap-2">
+                                            <Clock className="h-4 w-4 text-gray-400" />
+                                            <span className={`text-sm font-medium ${log.responseTime < 1000 ? 'text-green-600' :
+                                                    log.responseTime < 5000 ? 'text-yellow-600' : 'text-red-600'
+                                                }`}>
+                                                {log.responseTime}ms
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {log.statusCode && (
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-700">Status Code</label>
+                                        <div className="mt-1">
+                                            <Badge variant={log.statusCode >= 200 && log.statusCode < 300 ? 'default' : 'destructive'}>
+                                                {log.statusCode}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

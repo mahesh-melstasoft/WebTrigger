@@ -24,6 +24,11 @@ import {
     CreditCard,
     QrCode,
     MessageSquare,
+    Key,
+    Plus,
+    Trash2,
+    Copy,
+    Calendar,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -38,6 +43,15 @@ interface UserSettings {
     triggerLimit: number;
     secret?: string | null;
     slackWebhookUrl?: string;
+    createdAt: string;
+}
+
+interface ApiKey {
+    id: string;
+    name: string;
+    permissions: string[];
+    expiresAt: string | null;
+    lastUsedAt: string | null;
     createdAt: string;
 }
 
@@ -97,39 +111,112 @@ export default function SettingsPage() {
     const [totpToken, setTotpToken] = useState('');
     const [showTotpSetup, setShowTotpSetup] = useState(false);
     const [slackTesting, setSlackTesting] = useState(false);
+    const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+    const [showCreateApiKey, setShowCreateApiKey] = useState(false);
+    const [newApiKeyName, setNewApiKeyName] = useState('');
+    const [newApiKeyPermissions, setNewApiKeyPermissions] = useState<string[]>(['read']);
+    const [newApiKeyExpiresAt, setNewApiKeyExpiresAt] = useState('');
+    const [creatingApiKey, setCreatingApiKey] = useState(false);
+    const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
     const router = useRouter();
 
-    const fetchSettings = useCallback(async () => {
+    const fetchApiKeys = useCallback(async () => {
         const token = localStorage.getItem('token');
-        if (!token) {
-            router.push('/login');
-            return;
-        }
+        if (!token) return;
 
         try {
-            const response = await fetch('/api/settings', {
+            const response = await fetch('/api/api-keys', {
                 headers: { Authorization: `Bearer ${token}` },
             });
 
             if (response.ok) {
                 const data = await response.json();
-                setSettings(data);
-            } else if (response.status === 401) {
-                localStorage.removeItem('token');
-                router.push('/login');
-            } else {
-                setError('Failed to fetch settings');
+                setApiKeys(data);
             }
-        } catch {
-            setError('An error occurred while fetching settings');
-        } finally {
-            setLoading(false);
+        } catch (error) {
+            console.error('Failed to fetch API keys:', error);
         }
     }, [router]);
 
     useEffect(() => {
-        fetchSettings();
-    }, [fetchSettings]);
+        fetchApiKeys();
+    }, [fetchApiKeys]);
+
+    const handleCreateApiKey = async () => {
+        if (!newApiKeyName.trim()) return;
+
+        setCreatingApiKey(true);
+        setError('');
+        setSuccess('');
+
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/api-keys', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    name: newApiKeyName,
+                    permissions: newApiKeyPermissions,
+                    expiresAt: newApiKeyExpiresAt || null,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setCreatedApiKey(data.apiKey);
+                setShowCreateApiKey(false);
+                setNewApiKeyName('');
+                setNewApiKeyPermissions(['read']);
+                setNewApiKeyExpiresAt('');
+                fetchApiKeys(); // Refresh the list
+                setSuccess('API key created successfully!');
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to create API key');
+            }
+        } catch (error) {
+            setError('An error occurred while creating the API key');
+        } finally {
+            setCreatingApiKey(false);
+        }
+    };
+
+    const handleDeleteApiKey = async (apiKeyId: string) => {
+        if (!confirm('Are you sure you want to delete this API key? This action cannot be undone.')) {
+            return;
+        }
+
+        setError('');
+        setSuccess('');
+
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`/api/api-keys/${apiKeyId}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                setApiKeys(apiKeys.filter(key => key.id !== apiKeyId));
+                setSuccess('API key deleted successfully!');
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to delete API key');
+            }
+        } catch (error) {
+            setError('An error occurred while deleting the API key');
+        }
+    };
+
+    const copyApiKey = (apiKey: string) => {
+        navigator.clipboard.writeText(apiKey);
+        setSuccess('API key copied to clipboard!');
+    };
 
     const handleSave = async () => {
         if (!settings) return;
@@ -399,10 +486,11 @@ export default function SettingsPage() {
                 )}
 
                 <Tabs defaultValue="app" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-6">
+                    <TabsList className="grid w-full grid-cols-7">
                         <TabsTrigger value="app">App Branding</TabsTrigger>
                         <TabsTrigger value="account">Account</TabsTrigger>
                         <TabsTrigger value="security">Security</TabsTrigger>
+                        <TabsTrigger value="api-keys">API Keys</TabsTrigger>
                         <TabsTrigger value="appearance">Appearance</TabsTrigger>
                         <TabsTrigger value="slack">Slack</TabsTrigger>
                         <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -642,6 +730,267 @@ export default function SettingsPage() {
                                         </Alert>
                                     )}
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="api-keys" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Key className="h-5 w-5" />
+                                    API Keys
+                                </CardTitle>
+                                <CardDescription>
+                                    Manage API keys for programmatic access to your WebTrigger account
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Create API Key Section */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-medium">Your API Keys</h3>
+                                        <Button
+                                            onClick={() => setShowCreateApiKey(!showCreateApiKey)}
+                                            variant="outline"
+                                            size="sm"
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Create API Key
+                                        </Button>
+                                    </div>
+
+                                    {/* Create API Key Form */}
+                                    {showCreateApiKey && (
+                                        <Card className="border-blue-200 bg-blue-50">
+                                            <CardHeader>
+                                                <CardTitle className="text-blue-900">Create New API Key</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="grid gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <Label htmlFor="apiKeyName">API Key Name</Label>
+                                                        <Input
+                                                            id="apiKeyName"
+                                                            value={newApiKeyName}
+                                                            onChange={(e) => setNewApiKeyName(e.target.value)}
+                                                            placeholder="My API Key"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor="apiKeyExpiresAt">Expiration Date (Optional)</Label>
+                                                        <Input
+                                                            id="apiKeyExpiresAt"
+                                                            type="datetime-local"
+                                                            value={newApiKeyExpiresAt}
+                                                            onChange={(e) => setNewApiKeyExpiresAt(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <Label>Permissions</Label>
+                                                    <div className="grid gap-2 mt-2">
+                                                        {[
+                                                            { value: 'read', label: 'Read - View webhooks and logs' },
+                                                            { value: 'write', label: 'Write - Create and modify webhooks' },
+                                                            { value: 'admin', label: 'Admin - Full access including user management' }
+                                                        ].map((permission) => (
+                                                            <label key={permission.value} className="flex items-center gap-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={newApiKeyPermissions.includes(permission.value)}
+                                                                    onChange={(e) => {
+                                                                        if (e.target.checked) {
+                                                                            setNewApiKeyPermissions([...newApiKeyPermissions, permission.value]);
+                                                                        } else {
+                                                                            setNewApiKeyPermissions(newApiKeyPermissions.filter(p => p !== permission.value));
+                                                                        }
+                                                                    }}
+                                                                    className="rounded"
+                                                                />
+                                                                <span className="text-sm">{permission.label}</span>
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        onClick={handleCreateApiKey}
+                                                        disabled={creatingApiKey || !newApiKeyName.trim()}
+                                                    >
+                                                        {creatingApiKey ? (
+                                                            <>
+                                                                <Settings className="h-4 w-4 mr-2 animate-spin" />
+                                                                Creating...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Key className="h-4 w-4 mr-2" />
+                                                                Create API Key
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setShowCreateApiKey(false);
+                                                            setNewApiKeyName('');
+                                                            setNewApiKeyPermissions(['read']);
+                                                            setNewApiKeyExpiresAt('');
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/* Created API Key Display */}
+                                    {createdApiKey && (
+                                        <Card className="border-green-200 bg-green-50">
+                                            <CardHeader>
+                                                <CardTitle className="text-green-900 flex items-center gap-2">
+                                                    <CheckCircle className="h-5 w-5" />
+                                                    API Key Created Successfully
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div>
+                                                    <Label>API Key (Copy this - it will only be shown once)</Label>
+                                                    <div className="flex gap-2 mt-1">
+                                                        <Input
+                                                            value={createdApiKey}
+                                                            readOnly
+                                                            className="font-mono text-sm"
+                                                        />
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            onClick={() => copyApiKey(createdApiKey)}
+                                                        >
+                                                            <Copy className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                                <Alert>
+                                                    <Key className="h-4 w-4" />
+                                                    <AlertDescription>
+                                                        Store this API key securely. You can use it in the <code>X-API-Key</code> header or as a Bearer token for API authentication.
+                                                    </AlertDescription>
+                                                </Alert>
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => setCreatedApiKey(null)}
+                                                >
+                                                    Dismiss
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+                                </div>
+
+                                {/* API Keys List */}
+                                <div className="space-y-4">
+                                    {apiKeys.length === 0 ? (
+                                        <div className="text-center py-12">
+                                            <Key className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                            <h3 className="text-lg font-medium text-gray-900 mb-2">No API keys found</h3>
+                                            <p className="text-gray-600 mb-4">
+                                                Create your first API key to enable programmatic access to WebTrigger.
+                                            </p>
+                                            <Button onClick={() => setShowCreateApiKey(true)}>
+                                                <Plus className="h-4 w-4 mr-2" />
+                                                Create API Key
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-4">
+                                            {apiKeys.map((apiKey) => (
+                                                <Card key={apiKey.id} className="border-gray-200">
+                                                    <CardContent className="pt-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <h4 className="font-medium">{apiKey.name}</h4>
+                                                                    {apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date() && (
+                                                                        <Badge variant="destructive">Expired</Badge>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                                                    <div className="flex items-center gap-1">
+                                                                        <Calendar className="h-4 w-4" />
+                                                                        Created: {new Date(apiKey.createdAt).toLocaleDateString()}
+                                                                    </div>
+                                                                    {apiKey.lastUsedAt && (
+                                                                        <div className="flex items-center gap-1">
+                                                                            <CheckCircle className="h-4 w-4" />
+                                                                            Last used: {new Date(apiKey.lastUsedAt).toLocaleDateString()}
+                                                                        </div>
+                                                                    )}
+                                                                    {apiKey.expiresAt && (
+                                                                        <div className="flex items-center gap-1">
+                                                                            <Calendar className="h-4 w-4" />
+                                                                            Expires: {new Date(apiKey.expiresAt).toLocaleDateString()}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex gap-2">
+                                                                    {apiKey.permissions.map((permission) => (
+                                                                        <Badge key={permission} variant="outline">
+                                                                            {permission}
+                                                                        </Badge>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteApiKey(apiKey.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* API Usage Instructions */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>API Usage</CardTitle>
+                                <CardDescription>
+                                    How to use your API keys for authentication
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-3">
+                                    <div>
+                                        <h4 className="font-medium mb-2">Using X-API-Key Header:</h4>
+                                        <div className="bg-gray-100 p-3 rounded font-mono text-sm">
+                                            curl -H &quot;X-API-Key: your_api_key_here&quot; https://your-app.com/api/callbacks
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-medium mb-2">Using Authorization Header:</h4>
+                                        <div className="bg-gray-100 p-3 rounded font-mono text-sm">
+                                            curl -H &quot;Authorization: Bearer your_api_key_here&quot; https://your-app.com/api/callbacks
+                                        </div>
+                                    </div>
+                                </div>
+                                <Alert>
+                                    <Key className="h-4 w-4" />
+                                    <AlertDescription>
+                                        API keys have the same permissions as your account. Keep them secure and rotate them regularly.
+                                    </AlertDescription>
+                                </Alert>
                             </CardContent>
                         </Card>
                     </TabsContent>

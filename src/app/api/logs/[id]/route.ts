@@ -25,7 +25,13 @@ export async function GET(
                     userId: authResult.user!.id, // Ensure user can only access their own logs
                 },
             },
-            include: {
+            select: {
+                id: true,
+                event: true,
+                details: true,
+                createdAt: true,
+                responseTime: true,
+                statusCode: true,
                 callback: {
                     select: {
                         id: true,
