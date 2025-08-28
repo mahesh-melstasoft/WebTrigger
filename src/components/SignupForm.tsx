@@ -213,16 +213,14 @@ export default function SignupForm() {
                             </Label>
                         </div>
 
-                        {enable2FA && (
-                            <Alert>
-                                <Shield className="h-4 w-4" />
-                                <AlertDescription>
-                                    You'll need to scan a QR code with an authenticator app (Google Authenticator, Authy, etc.) after creating your account.
-                                </AlertDescription>
-                            </Alert>
-                        )}
-
-                        {error && (
+                          {enable2FA && (
+                              <Alert>
+                                  <Shield className="h-4 w-4" />
+                                  <AlertDescription>
+                                      You&apos;ll need to scan a QR code with an authenticator app (Google Authenticator, Authy, etc.) after creating your account.
+                                  </AlertDescription>
+                              </Alert>
+                          )}                        {error && (
                             <Alert variant="destructive">
                                 <AlertDescription>{error}</AlertDescription>
                             </Alert>
