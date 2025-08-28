@@ -138,9 +138,38 @@ export default function SettingsPage() {
         }
     }, [router]);
 
+    const fetchSettings = useCallback(async () => {
+        const token = localStorage.getItem('token');
+        if (!token) {
+            router.push('/login');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/settings', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setSettings(data);
+            } else if (response.status === 401) {
+                localStorage.removeItem('token');
+                router.push('/login');
+            } else {
+                setError('Failed to fetch settings');
+            }
+        } catch {
+            setError('An error occurred while fetching settings');
+        } finally {
+            setLoading(false);
+        }
+    }, [router]);
+
     useEffect(() => {
+        fetchSettings();
         fetchApiKeys();
-    }, [fetchApiKeys]);
+    }, [fetchSettings, fetchApiKeys]);
 
     const handleCreateApiKey = async () => {
         if (!newApiKeyName.trim()) return;
@@ -991,6 +1020,71 @@ export default function SettingsPage() {
                                         API keys have the same permissions as your account. Keep them secure and rotate them regularly.
                                     </AlertDescription>
                                 </Alert>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="appearance" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Settings className="h-5 w-5" />
+                                    Appearance Settings
+                                </CardTitle>
+                                <CardDescription>
+                                    Customize the look and feel of your WebTrigger dashboard
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="colorPalette">Color Theme</Label>
+                                        <select
+                                            id="colorPalette"
+                                            value={settings.colorPalette}
+                                            onChange={(e) => setSettings({ ...settings, colorPalette: e.target.value })}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                        >
+                                            <option value="default">Default</option>
+                                            <option value="blue">Blue</option>
+                                            <option value="green">Green</option>
+                                            <option value="purple">Purple</option>
+                                            <option value="dark">Dark</option>
+                                        </select>
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Choose your preferred color scheme for the dashboard
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <h4 className="font-medium text-blue-900 mb-2">Theme Options:</h4>
+                                        <div className="grid gap-3 text-sm text-blue-800">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 bg-blue-500 rounded"></div>
+                                                <span><strong>Default:</strong> Clean blue theme with light backgrounds</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 bg-green-500 rounded"></div>
+                                                <span><strong>Green:</strong> Nature-inspired green color scheme</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 bg-purple-500 rounded"></div>
+                                                <span><strong>Purple:</strong> Elegant purple theme</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-4 h-4 bg-gray-800 rounded"></div>
+                                                <span><strong>Dark:</strong> Dark mode for low-light environments</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <Alert>
+                                        <Settings className="h-4 w-4" />
+                                        <AlertDescription>
+                                            Theme changes will be applied immediately. Some color preferences may require a page refresh to take full effect.
+                                        </AlertDescription>
+                                    </Alert>
+                                </div>
                             </CardContent>
                         </Card>
                     </TabsContent>
