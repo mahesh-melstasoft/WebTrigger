@@ -6,8 +6,8 @@ export async function POST(request: NextRequest) {
     try {
         const { email, password, token } = await request.json();
 
-        if (!email || !password || !token) {
-            return NextResponse.json({ error: 'Email, password, and token are required' }, { status: 400 });
+        if (!email || !password) {
+            return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
         }
 
         // Check if required environment variables are set
@@ -31,18 +31,29 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
         }
 
-        if (!user.secret) {
-            return NextResponse.json({ error: 'TOTP not set up' }, { status: 400 });
-        }
+        // Check if user has 2FA enabled
+        if (user.secret) {
+            // User has 2FA enabled, require TOTP token
+            if (!token) {
+                return NextResponse.json({ error: 'TOTP token is required for accounts with 2FA enabled' }, { status: 400 });
+            }
 
-        const isTokenValid = verifyToken(user.secret, token);
-        if (!isTokenValid) {
-            return NextResponse.json({ error: 'Invalid TOTP token' }, { status: 401 });
+            const isTokenValid = verifyToken(user.secret, token);
+            if (!isTokenValid) {
+                return NextResponse.json({ error: 'Invalid TOTP token' }, { status: 401 });
+            }
+        } else {
+            // User doesn't have 2FA enabled, no token required
+            // This is fine, continue with login
         }
 
         const jwt = generateJWT(user.id);
 
-        return NextResponse.json({ message: 'Login successful', token: jwt });
+        return NextResponse.json({
+            message: 'Login successful',
+            token: jwt,
+            twoFactorEnabled: !!user.secret
+        });
     } catch (error) {
         console.error('Login error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
