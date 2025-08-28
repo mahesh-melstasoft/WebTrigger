@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import axios from 'axios';
 
 export async function GET(
@@ -8,6 +7,9 @@ export async function GET(
 ) {
     try {
         const { token } = await params;
+
+        // Dynamic import to avoid build-time initialization
+        const { prisma } = await import('@/lib/prisma');
 
         const callback = await prisma.callback.findUnique({
             where: { triggerToken: token },

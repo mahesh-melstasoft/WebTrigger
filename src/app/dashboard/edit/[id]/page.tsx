@@ -100,7 +100,7 @@ export default function EditCallback() {
     };
 
     const copyTriggerUrl = async () => {
-        const url = `${window.location.origin}/api/trigger/${triggerToken}`;
+        const url = `${window.location.origin}/api/trigger/token/${triggerToken}`;
 
         // Check if clipboard API is available
         if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
@@ -218,7 +218,7 @@ export default function EditCallback() {
                                     <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md border">
                                         <ExternalLink className="h-4 w-4 text-gray-400" />
                                         <code className="text-sm text-gray-700 font-mono flex-1">
-                                            {window.location.origin}/api/trigger/{triggerToken}
+                                            {window.location.origin}/api/trigger/token/{triggerToken}
                                         </code>
                                         <Button
                                             type="button"

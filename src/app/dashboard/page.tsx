@@ -98,7 +98,7 @@ export default function Dashboard() {
     };
 
     const copyTriggerUrl = async (triggerToken: string) => {
-        const url = `${window.location.origin}/api/trigger/${triggerToken}`;
+        const url = `${window.location.origin}/api/trigger/token/${triggerToken}`;
 
         // Check if clipboard API is available
         if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
@@ -298,7 +298,7 @@ export default function Dashboard() {
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-                                                        /api/trigger/{callback.triggerToken?.substring(0, 8)}...
+                                                        /api/trigger/token/{callback.triggerToken?.substring(0, 8)}...
                                                     </code>
                                                     <Button
                                                         variant="ghost"

@@ -7,6 +7,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 export interface AuthUser {
     id: string;
     email: string;
+    displayName?: string;
     role: string;
 }
 
@@ -41,6 +42,7 @@ export async function authMiddleware(request: Request): Promise<AuthResult> {
             select: {
                 id: true,
                 email: true,
+                displayName: true,
                 role: true,
                 isActive: true,
             },
@@ -59,6 +61,7 @@ export async function authMiddleware(request: Request): Promise<AuthResult> {
             user: {
                 id: user.id,
                 email: user.email,
+                displayName: user.displayName || undefined,
                 role: user.role,
             },
         };
