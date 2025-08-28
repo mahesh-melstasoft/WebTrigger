@@ -496,11 +496,19 @@ export default function SettingsPage() {
                                                 <p className="text-sm text-orange-700 mb-4">
                                                     Scan this QR code with your authenticator app:
                                                 </p>
-                                                <Image
-                                                    src={totpSetup.qrCode}
-                                                    alt="TOTP QR Code"
-                                                    className="mx-auto border rounded"
-                                                />
+                                                {totpSetup.qrCode ? (
+                                                    <img
+                                                        src={totpSetup.qrCode}
+                                                        alt="TOTP QR Code"
+                                                        className="mx-auto border rounded"
+                                                        style={{ maxWidth: '200px', height: 'auto' }}
+                                                    />
+                                                ) : (
+                                                    <div className="mx-auto border rounded bg-gray-100 p-8 text-center">
+                                                        <QrCode className="h-16 w-16 mx-auto text-gray-400 mb-2" />
+                                                        <p className="text-sm text-gray-500">QR Code</p>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="bg-white p-3 rounded border font-mono text-sm">
                                                 {totpSetup.secret}
