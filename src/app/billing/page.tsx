@@ -33,6 +33,22 @@ interface Plan {
     isActive: boolean;
 }
 
+interface Subscription {
+    id: string;
+    status: string;
+    currentPeriodStart: string;
+    currentPeriodEnd: string;
+    plan: {
+        id: string;
+        name: string;
+        description: string;
+        price: number;
+        interval: string;
+        maxTriggers: number;
+        features: string[];
+    };
+}
+
 export default function BillingPage() {
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [plans, setPlans] = useState<Plan[]>([]);
