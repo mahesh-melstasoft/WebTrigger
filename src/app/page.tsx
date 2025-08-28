@@ -6,24 +6,17 @@ import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Webhook,
   Zap,
   Shield,
   BarChart3,
   Clock,
-  Globe,
   CheckCircle,
   ArrowRight,
   Star,
   Users,
-  Activity,
-  Lock,
-  Smartphone,
   Settings,
-  FileText,
-  Crown,
   Sparkles
 } from 'lucide-react';
 

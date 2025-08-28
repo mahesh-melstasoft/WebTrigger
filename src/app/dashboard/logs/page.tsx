@@ -194,7 +194,11 @@ export default function LogsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {logs.map((log) => (
-                                        <TableRow key={log.id}>
+                                        <TableRow
+                                            key={log.id}
+                                            className="cursor-pointer hover:bg-gray-50 transition-colors"
+                                            onClick={() => router.push(`/dashboard/logs/${log.id}`)}
+                                        >
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     {getEventIcon(log.event)}

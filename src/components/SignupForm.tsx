@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,9 +102,11 @@ export default function SignupForm() {
                     <CardContent className="space-y-6">
                         <div className="flex justify-center">
                             <div className="bg-white p-4 rounded-lg shadow-sm border">
-                                <img
+                                <Image
                                     src={qrCodeUrl}
                                     alt="TOTP QR Code"
+                                    width={192}
+                                    height={192}
                                     className="w-48 h-48"
                                     style={{ maxWidth: '192px', height: 'auto' }}
                                 />

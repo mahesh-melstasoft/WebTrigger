@@ -16,7 +16,6 @@ export default function LoginForm() {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [showTotpField, setShowTotpField] = useState(false);
-    const [userHas2FA, setUserHas2FA] = useState(false);
     const router = useRouter();
     const searchParams = useSearchParams();
 
@@ -49,7 +48,6 @@ export default function LoginForm() {
                 router.push('/dashboard');
             } else if (data.error === 'TOTP token is required for accounts with 2FA enabled') {
                 // User has 2FA enabled, show TOTP field
-                setUserHas2FA(true);
                 setShowTotpField(true);
                 setError(''); // Clear error
             } else {
@@ -95,7 +93,6 @@ export default function LoginForm() {
 
     const handleBackToCredentials = () => {
         setShowTotpField(false);
-        setUserHas2FA(false);
         setToken('');
         setError('');
     };

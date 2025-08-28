@@ -16,6 +16,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'User already exists' }, { status: 400 });
         }
 
+        // Check if this is the first user to make them admin
+        const userCount = await prisma.user.count();
+        const isFirstUser = userCount === 0;
+        const userRole = isFirstUser ? 'ADMIN' : 'FREE';
+
         const hashedPassword = await hashPassword(password);
 
         if (enable2FA) {
@@ -29,18 +34,22 @@ export async function POST(request: NextRequest) {
                     email,
                     password: hashedPassword,
                     secret: `temp_${secret.base32}`, // Temporary secret until verified
+                    role: userRole as 'ADMIN' | 'FREE',
                     isActive: false, // Account inactive until TOTP verification
                 },
             });
 
             return NextResponse.json({
-                message: 'Account created. Please scan the QR code and verify with TOTP to complete setup.',
+                message: isFirstUser
+                    ? 'Account created as admin. Please scan the QR code and verify with TOTP to complete setup.'
+                    : 'Account created. Please scan the QR code and verify with TOTP to complete setup.',
                 userId: user.id,
                 qrCodeUrl: qrCodeDataUrl,
                 secret: secret.base32,
                 otpauth_url: secret.otpauth_url,
                 requiresVerification: true,
                 twoFactorEnabled: true,
+                isAdmin: isFirstUser,
             });
         } else {
             // Create user without 2FA - directly active
@@ -49,15 +58,19 @@ export async function POST(request: NextRequest) {
                     email,
                     password: hashedPassword,
                     secret: null, // No TOTP secret
+                    role: userRole as 'ADMIN' | 'FREE',
                     isActive: true, // Account active immediately
                 },
             });
 
             return NextResponse.json({
-                message: 'Account created successfully! You can now log in.',
+                message: isFirstUser
+                    ? 'Admin account created successfully! You can now log in.'
+                    : 'Account created successfully! You can now log in.',
                 userId: user.id,
                 requiresVerification: false,
                 twoFactorEnabled: false,
+                isAdmin: isFirstUser,
             });
         }
     } catch (error) {

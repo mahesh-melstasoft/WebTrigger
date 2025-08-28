@@ -56,7 +56,8 @@ const ACCOUNT_TYPES = [
         limits: '50 triggers',
         features: ['Advanced webhook triggers', 'Enhanced logging', 'Email support', 'Custom timeouts'],
         color: 'bg-blue-100 text-blue-800',
-        icon: Zap
+        icon: Zap,
+        planId: 'cmev2jyjz0000hoe81bz1mm6u' // From seeded database
     },
     {
         id: 'pro',
@@ -65,7 +66,8 @@ const ACCOUNT_TYPES = [
         limits: '500 triggers',
         features: ['Unlimited webhook triggers', 'Advanced analytics', 'Priority support', 'Custom integrations'],
         color: 'bg-purple-100 text-purple-800',
-        icon: Star
+        icon: Star,
+        planId: 'cmev2jyoj0001hoe84vt6h8op' // From seeded database
     },
     {
         id: 'admin',
@@ -74,7 +76,8 @@ const ACCOUNT_TYPES = [
         limits: 'Unlimited',
         features: ['All Pro features', 'User management', 'Admin dashboard', 'Custom reports', 'White-label options'],
         color: 'bg-gold-100 text-gold-800',
-        icon: Crown
+        icon: Crown,
+        planId: 'cmev2jysg0002hoe8i59phiv9' // From seeded database
     }
 ];
 
@@ -254,8 +257,16 @@ export default function SettingsPage() {
     const handleUpgrade = async () => {
         if (!settings) return;
 
+        const selectedAccountType = ACCOUNT_TYPES.find(type => type.id === settings.accountType);
+        if (!selectedAccountType) return;
+
         if (settings.accountType === 'free') {
-            // Redirect to Stripe checkout
+            // Redirect to Stripe checkout for new subscription
+            if (!selectedAccountType.planId) {
+                setError('Plan ID not found for selected account type');
+                return;
+            }
+
             try {
                 const token = localStorage.getItem('token');
                 const response = await fetch('/api/payments/create-session', {
@@ -265,7 +276,7 @@ export default function SettingsPage() {
                         Authorization: `Bearer ${token}`,
                     },
                     body: JSON.stringify({
-                        planId: 'starter-plan-id', // This should be dynamic based on selected plan
+                        planId: selectedAccountType.planId,
                         successUrl: `${window.location.origin}/settings?success=true`,
                         cancelUrl: `${window.location.origin}/settings?canceled=true`,
                     }),
@@ -281,8 +292,29 @@ export default function SettingsPage() {
                 setError('An error occurred while processing payment');
             }
         } else {
-            // Redirect to Stripe customer portal
-            setError('Customer portal not implemented yet');
+            // Redirect to Stripe customer portal for existing subscribers
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/payments/create-portal-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        returnUrl: `${window.location.origin}/settings`,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = data.url;
+                } else {
+                    setError('Failed to create customer portal session');
+                }
+            } catch {
+                setError('An error occurred while accessing billing portal');
+            }
         }
     };
 
@@ -497,9 +529,11 @@ export default function SettingsPage() {
                                                     Scan this QR code with your authenticator app:
                                                 </p>
                                                 {totpSetup.qrCode ? (
-                                                    <img
+                                                    <Image
                                                         src={totpSetup.qrCode}
                                                         alt="TOTP QR Code"
+                                                        width={200}
+                                                        height={200}
                                                         className="mx-auto border rounded"
                                                         style={{ maxWidth: '200px', height: 'auto' }}
                                                     />

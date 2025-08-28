@@ -169,6 +169,12 @@ export default function Dashboard() {
                                 </Link>
                             </Button>
                             <Button asChild variant="outline">
+                                <Link href="/dashboard/analytics">
+                                    <Activity className="h-4 w-4 mr-2" />
+                                    Analytics
+                                </Link>
+                            </Button>
+                            <Button asChild variant="outline">
                                 <Link href="/settings">
                                     <Settings className="h-4 w-4 mr-2" />
                                     Settings
