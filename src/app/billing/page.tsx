@@ -21,89 +21,21 @@ import {
     TrendingUp,
 } from 'lucide-react';
 
-interface Subscription {
+interface Plan {
     id: string;
-    plan: {
-        id: string;
-        name: string;
-        description: string;
-        price: number;
-        currency: string;
-        interval: string;
-        maxTriggers: number;
-        features: string[];
-    };
-    status: 'ACTIVE' | 'INACTIVE' | 'CANCELLED' | 'PAST_DUE';
-    currentPeriodStart: string;
-    currentPeriodEnd: string;
-    stripeCustomerId: string;
-    stripeSubscriptionId: string;
+    name: string;
+    description: string;
+    price: number;
+    currency: string;
+    interval: string;
+    maxTriggers: number;
+    features: string[];
+    isActive: boolean;
 }
-
-const PLANS = [
-    {
-        id: 'cmev2jyjz0000hoe81bz1mm6u',
-        name: 'Starter',
-        price: 9.99,
-        currency: 'USD',
-        interval: 'month',
-        maxTriggers: 50,
-        features: [
-            '50 webhook triggers per month',
-            'Enhanced logging',
-            'Email support',
-            'Custom timeouts up to 30s',
-            'Basic analytics'
-        ],
-        color: 'bg-blue-500',
-        icon: Zap,
-        popular: false
-    },
-    {
-        id: 'cmev2jyoj0001hoe84vt6h8op',
-        name: 'Pro',
-        price: 29.99,
-        currency: 'USD',
-        interval: 'month',
-        maxTriggers: 500,
-        features: [
-            '500 webhook triggers per month',
-            'Advanced analytics & reporting',
-            'Priority email support',
-            'Custom timeouts up to 60s',
-            'Webhook retry logic',
-            'Custom integrations',
-            'White-label options'
-        ],
-        color: 'bg-purple-500',
-        icon: Star,
-        popular: true
-    },
-    {
-        id: 'cmev2jysg0002hoe8i59phiv9',
-        name: 'Admin',
-        price: 99.99,
-        currency: 'USD',
-        interval: 'month',
-        maxTriggers: -1,
-        features: [
-            'Unlimited webhook triggers',
-            'All Pro features',
-            'User management dashboard',
-            'Advanced reporting & insights',
-            'Custom branding',
-            'API rate limiting',
-            'Dedicated support',
-            'SLA guarantee'
-        ],
-        color: 'bg-gold-500',
-        icon: Crown,
-        popular: false
-    }
-];
 
 export default function BillingPage() {
     const [subscription, setSubscription] = useState<Subscription | null>(null);
+    const [plans, setPlans] = useState<Plan[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -134,6 +66,13 @@ export default function BillingPage() {
             if (subResponse.ok) {
                 const subData = await subResponse.json();
                 setSubscription(subData);
+            }
+
+            // Fetch available plans
+            const plansResponse = await fetch('/api/plans');
+            if (plansResponse.ok) {
+                const plansData = await plansResponse.json();
+                setPlans(plansData);
             }
         } catch (err) {
             console.error('Error fetching billing data:', err);
@@ -387,13 +326,13 @@ export default function BillingPage() {
                         </div>
 
                         <div className="grid md:grid-cols-3 gap-8">
-                            {PLANS.map((plan) => {
-                                const Icon = plan.icon;
+                            {plans.map((plan) => {
                                 const isCurrentPlan = subscription?.plan.id === plan.id;
+                                const isPopular = plan.name === 'Pro'; // Mark Pro as popular
 
                                 return (
-                                    <Card key={plan.id} className={`relative ${plan.popular ? 'border-purple-500 shadow-xl scale-105' : ''}`}>
-                                        {plan.popular && (
+                                    <Card key={plan.id} className={`relative ${isPopular ? 'border-purple-500 shadow-xl scale-105' : ''}`}>
+                                        {isPopular && (
                                             <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                                                 <Badge className="bg-purple-500 text-white px-4 py-1">Most Popular</Badge>
                                             </div>
@@ -401,7 +340,9 @@ export default function BillingPage() {
 
                                         <CardHeader className="text-center pb-8">
                                             <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                                                <Icon className="h-6 w-6 text-gray-600" />
+                                                {plan.name === 'Starter' && <Zap className="h-6 w-6 text-gray-600" />}
+                                                {plan.name === 'Pro' && <Star className="h-6 w-6 text-gray-600" />}
+                                                {plan.name === 'Admin' && <Crown className="h-6 w-6 text-gray-600" />}
                                             </div>
                                             <CardTitle className="text-2xl">{plan.name}</CardTitle>
                                             <div className="mt-4">
@@ -427,8 +368,8 @@ export default function BillingPage() {
                                                 </Button>
                                             ) : (
                                                 <Button
-                                                    className={`w-full ${plan.popular ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
-                                                    variant={plan.popular ? 'default' : 'outline'}
+                                                    className={`w-full ${isPopular ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                                                    variant={isPopular ? 'default' : 'outline'}
                                                     onClick={() => handleSubscribe(plan.id)}
                                                 >
                                                     {subscription ? 'Upgrade' : 'Subscribe'}

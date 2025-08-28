@@ -156,49 +156,49 @@ export default function Dashboard() {
     return (
         <>
             <div className="min-h-screen relative overflow-hidden">
-                {/* Liquid AI inspired background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900"></div>
+                {/* Liquid AI inspired background - toned down */}
+                <div className="absolute inset-0 bg-gradient-to-br from-gray-50 via-blue-50 to-gray-100"></div>
 
-                {/* Animated background elements */}
+                {/* Subtle animated background elements */}
                 <div className="absolute inset-0">
-                    <div className="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-                    <div className="absolute top-0 -right-4 w-72 h-72 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-                    <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
+                    <div className="absolute top-0 -left-4 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob"></div>
+                    <div className="absolute top-0 -right-4 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-2000"></div>
+                    <div className="absolute -bottom-8 left-20 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-blob animation-delay-4000"></div>
                 </div>
 
-                {/* Grid pattern overlay */}
-                <div className="absolute inset-0 opacity-20" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                {/* Subtle grid pattern overlay */}
+                <div className="absolute inset-0 opacity-10" style={{
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.05'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
                 }}></div>
 
                 <div className="relative z-10 max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
                     <div className="mb-8">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div>
-                                <h1 className="text-3xl font-bold text-white">Dashboard</h1>
-                                <p className="text-gray-300 mt-1">Manage your webhook callbacks</p>
+                                <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+                                <p className="text-gray-600 mt-1">Manage your webhook callbacks</p>
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <Button asChild variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
                                     <Link href="/dashboard/logs">
                                         <FileText className="h-4 w-4 mr-2" />
                                         View Logs
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
                                     <Link href="/dashboard/analytics">
                                         <Activity className="h-4 w-4 mr-2" />
                                         Analytics
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
                                     <Link href="/billing">
                                         <CreditCard className="h-4 w-4 mr-2" />
                                         Billing
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
                                     <Link href="/settings">
                                         <Settings className="h-4 w-4 mr-2" />
                                         Settings
@@ -210,7 +210,7 @@ export default function Dashboard() {
                                         Add Callback
                                     </Link>
                                 </Button>
-                                <Button variant="outline" onClick={handleLogout} className="border-gray-600 text-gray-300 hover:bg-gray-800">
+                                <Button variant="outline" onClick={handleLogout} className="border-gray-300 text-gray-700 hover:bg-gray-50">
                                     <LogOut className="h-4 w-4 mr-2" />
                                     Logout
                                 </Button>
@@ -219,52 +219,52 @@ export default function Dashboard() {
                     </div>
 
                     {error && (
-                        <Alert className="mb-6 bg-red-900/50 border-red-700 text-red-100" variant="destructive">
+                        <Alert className="mb-6 bg-red-50 border-red-200 text-red-800" variant="destructive">
                             <XCircle className="h-4 w-4" />
                             <AlertDescription>{error}</AlertDescription>
                         </Alert>
                     )}
 
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
-                        <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
+                        <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-300">Total Callbacks</CardTitle>
-                                <Webhook className="h-4 w-4 text-gray-400" />
+                                <CardTitle className="text-sm font-medium text-gray-600">Total Callbacks</CardTitle>
+                                <Webhook className="h-4 w-4 text-gray-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-white">{callbacks.length}</div>
+                                <div className="text-2xl font-bold text-gray-900">{callbacks.length}</div>
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
+                        <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-300">Active Callbacks</CardTitle>
-                                <CheckCircle className="h-4 w-4 text-green-400" />
+                                <CardTitle className="text-sm font-medium text-gray-600">Active Callbacks</CardTitle>
+                                <CheckCircle className="h-4 w-4 text-green-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-green-400">
+                                <div className="text-2xl font-bold text-green-600">
                                     {callbacks.filter(cb => cb.activeStatus).length}
                                 </div>
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
+                        <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                                <CardTitle className="text-sm font-medium text-gray-300">Inactive Callbacks</CardTitle>
-                                <XCircle className="h-4 w-4 text-red-400" />
+                                <CardTitle className="text-sm font-medium text-gray-600">Inactive Callbacks</CardTitle>
+                                <XCircle className="h-4 w-4 text-red-500" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-red-400">
+                                <div className="text-2xl font-bold text-red-600">
                                     {callbacks.filter(cb => !cb.activeStatus).length}
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                    <Card className="bg-white/10 backdrop-blur-sm border-gray-700">
+                    <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
                         <CardHeader>
-                            <CardTitle className="text-white">Your Callbacks</CardTitle>
-                            <CardDescription className="text-gray-300">
+                            <CardTitle className="text-gray-900">Your Callbacks</CardTitle>
+                            <CardDescription className="text-gray-600">
                                 Manage your webhook endpoints and trigger URLs
                             </CardDescription>
                         </CardHeader>
@@ -272,8 +272,8 @@ export default function Dashboard() {
                             {callbacks.length === 0 ? (
                                 <div className="text-center py-12">
                                     <Webhook className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                                    <h3 className="text-lg font-medium text-white mb-2">No callbacks yet</h3>
-                                    <p className="text-gray-300 mb-4">
+                                    <h3 className="text-lg font-medium text-gray-900 mb-2">No callbacks yet</h3>
+                                    <p className="text-gray-600 mb-4">
                                         Get started by creating your first callback endpoint.
                                     </p>
                                     <Button asChild>
@@ -286,25 +286,25 @@ export default function Dashboard() {
                             ) : (
                                 <Table>
                                     <TableHeader>
-                                        <TableRow className="border-gray-700 hover:bg-white/5">
-                                            <TableHead className="text-gray-300">Name</TableHead>
-                                            <TableHead className="text-gray-300">Status</TableHead>
-                                            <TableHead className="text-gray-300">Callback URL</TableHead>
-                                            <TableHead className="text-gray-300">Trigger URL</TableHead>
-                                            <TableHead className="text-gray-300">Created</TableHead>
-                                            <TableHead className="w-[70px] text-gray-300">Actions</TableHead>
+                                        <TableRow className="border-gray-200 hover:bg-gray-50">
+                                            <TableHead className="text-gray-600">Name</TableHead>
+                                            <TableHead className="text-gray-600">Status</TableHead>
+                                            <TableHead className="text-gray-600">Callback URL</TableHead>
+                                            <TableHead className="text-gray-600">Trigger URL</TableHead>
+                                            <TableHead className="text-gray-600">Created</TableHead>
+                                            <TableHead className="w-[70px] text-gray-600">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {callbacks.map((callback) => (
-                                            <TableRow key={callback.id} className="border-gray-700 hover:bg-white/5">
-                                                <TableCell className="text-white">
-                                                    <div className="font-medium text-white">
+                                            <TableRow key={callback.id} className="border-gray-200 hover:bg-gray-50">
+                                                <TableCell className="text-gray-900">
+                                                    <div className="font-medium text-gray-900">
                                                         {callback.name}
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Badge variant={callback.activeStatus ? 'default' : 'secondary'} className={callback.activeStatus ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}>
+                                                    <Badge variant={callback.activeStatus ? 'default' : 'secondary'} className={callback.activeStatus ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
                                                         {callback.activeStatus ? (
                                                             <>
                                                                 <CheckCircle className="h-3 w-3 mr-1" />
@@ -318,25 +318,25 @@ export default function Dashboard() {
                                                         )}
                                                     </Badge>
                                                 </TableCell>
-                                                <TableCell className="text-gray-300">
+                                                <TableCell className="text-gray-600">
                                                     <div className="max-w-xs">
-                                                        <p className="text-sm text-gray-300 truncate" title={callback.callbackUrl}>
+                                                        <p className="text-sm text-gray-600 truncate" title={callback.callbackUrl}>
                                                             {callback.callbackUrl}
                                                         </p>
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-gray-300">
+                                                <TableCell className="text-gray-600">
                                                     <div className="space-y-2">
                                                         {/* Token-based URL */}
                                                         <div className="flex items-center gap-2">
-                                                            <code className="text-xs bg-gray-800 px-2 py-1 rounded font-mono text-gray-300">
+                                                            <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-700">
                                                                 /api/trigger/token/{callback.triggerToken?.substring(0, 8)}...
                                                             </code>
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() => copyTriggerUrl(callback.triggerToken)}
-                                                                className="text-gray-400 hover:text-white hover:bg-gray-800"
+                                                                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                                                             >
                                                                 <Copy className="h-3 w-3" />
                                                             </Button>
@@ -345,14 +345,14 @@ export default function Dashboard() {
                                                         {/* Custom path URL */}
                                                         {callback.customPath && (
                                                             <div className="flex items-center gap-2">
-                                                                <code className="text-xs bg-green-800 px-2 py-1 rounded font-mono text-green-300">
+                                                                <code className="text-xs bg-green-100 px-2 py-1 rounded font-mono text-green-700">
                                                                     /api/trigger/custom/{callback.customPath}
                                                                 </code>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     onClick={() => copyTriggerUrl(callback.customPath!, `${window.location.origin}/api/trigger/custom/${callback.customPath}`)}
-                                                                    className="text-gray-400 hover:text-white hover:bg-gray-800"
+                                                                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
                                                                 >
                                                                     <Copy className="h-3 w-3" />
                                                                 </Button>
@@ -360,20 +360,20 @@ export default function Dashboard() {
                                                         )}
                                                     </div>
                                                 </TableCell>
-                                                <TableCell className="text-gray-300">
-                                                    <span className="text-sm text-gray-300">
+                                                <TableCell className="text-gray-600">
+                                                    <span className="text-sm text-gray-600">
                                                         {new Date(callback.createdAt).toLocaleDateString()}
                                                     </span>
                                                 </TableCell>
                                                 <TableCell>
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-800">
+                                                            <Button variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100">
                                                                 <MoreHorizontal className="h-4 w-4" />
                                                             </Button>
                                                         </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="bg-gray-800 border-gray-700">
-                                                            <DropdownMenuItem asChild className="text-gray-300 hover:bg-gray-700">
+                                                        <DropdownMenuContent align="end" className="bg-white border-gray-200">
+                                                            <DropdownMenuItem asChild className="text-gray-700 hover:bg-gray-50">
                                                                 <Link href={`/dashboard/edit/${callback.id}`}>
                                                                     <Edit className="h-4 w-4 mr-2" />
                                                                     Edit
@@ -381,7 +381,7 @@ export default function Dashboard() {
                                                             </DropdownMenuItem>
                                                             <DropdownMenuItem
                                                                 onClick={() => handleDelete(callback.id)}
-                                                                className="text-red-400 hover:bg-red-900/50"
+                                                                className="text-red-600 hover:bg-red-50"
                                                             >
                                                                 <Trash2 className="h-4 w-4 mr-2" />
                                                                 Delete
