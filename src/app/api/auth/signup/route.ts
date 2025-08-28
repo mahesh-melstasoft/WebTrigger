@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateSecret, hashPassword } from '@/lib/auth';
+import qrcode from 'qrcode';
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,6 +19,9 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await hashPassword(password);
         const secret = generateSecret();
 
+        // Generate QR code data URL
+        const qrCodeDataUrl = await qrcode.toDataURL(secret.otpauth_url!);
+
         await prisma.user.create({
             data: {
                 email,
@@ -28,7 +32,9 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             message: 'User created successfully',
-            qrCodeUrl: secret.otpauth_url, // For QR code generation
+            qrCodeUrl: qrCodeDataUrl, // Return the actual QR code data URL
+            secret: secret.base32,
+            otpauth_url: secret.otpauth_url,
         });
     } catch (error) {
         console.error(error);
