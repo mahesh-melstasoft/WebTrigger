@@ -1,0 +1,6 @@
+version: "1"
+rules:
+  - base: main
+    upstream: MaheshBrodev:main
+    mergeMethod: hardreset
+    mergeUnstable: true
