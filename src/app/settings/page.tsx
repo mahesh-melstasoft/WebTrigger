@@ -23,6 +23,7 @@ import {
     Shield,
     CreditCard,
     QrCode,
+    MessageSquare,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -36,6 +37,7 @@ interface UserSettings {
     colorPalette: string;
     triggerLimit: number;
     secret?: string | null;
+    slackWebhookUrl?: string;
     createdAt: string;
 }
 
@@ -94,6 +96,7 @@ export default function SettingsPage() {
     } | null>(null);
     const [totpToken, setTotpToken] = useState('');
     const [showTotpSetup, setShowTotpSetup] = useState(false);
+    const [slackTesting, setSlackTesting] = useState(false);
     const router = useRouter();
 
     const fetchSettings = useCallback(async () => {
@@ -254,6 +257,37 @@ export default function SettingsPage() {
         }
     };
 
+    const handleSlackTest = async () => {
+        if (!settings?.slackWebhookUrl) return;
+
+        setSlackTesting(true);
+        setError('');
+        setSuccess('');
+
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/slack/test', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ webhookUrl: settings.slackWebhookUrl }),
+            });
+
+            if (response.ok) {
+                setSuccess('Test message sent to Slack successfully!');
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to send test message to Slack');
+            }
+        } catch {
+            setError('An error occurred while testing Slack webhook');
+        } finally {
+            setSlackTesting(false);
+        }
+    };
+
     const handleUpgrade = async () => {
         if (!settings) return;
 
@@ -365,11 +399,12 @@ export default function SettingsPage() {
                 )}
 
                 <Tabs defaultValue="app" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-5">
+                    <TabsList className="grid w-full grid-cols-6">
                         <TabsTrigger value="app">App Branding</TabsTrigger>
                         <TabsTrigger value="account">Account</TabsTrigger>
                         <TabsTrigger value="security">Security</TabsTrigger>
                         <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                        <TabsTrigger value="slack">Slack</TabsTrigger>
                         <TabsTrigger value="profile">Profile</TabsTrigger>
                     </TabsList>
 
@@ -606,6 +641,81 @@ export default function SettingsPage() {
                                             </AlertDescription>
                                         </Alert>
                                     )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="slack" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <MessageSquare className="h-5 w-5" />
+                                    Slack Notifications
+                                </CardTitle>
+                                <CardDescription>
+                                    Get notified in Slack when your webhooks are triggered
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="slackWebhookUrl">Slack Webhook URL</Label>
+                                        <Input
+                                            id="slackWebhookUrl"
+                                            type="url"
+                                            value={settings.slackWebhookUrl || ''}
+                                            onChange={(e) => setSettings({ ...settings, slackWebhookUrl: e.target.value })}
+                                            placeholder="https://hooks.slack.com/services/..."
+                                        />
+                                        <p className="text-sm text-gray-600 mt-1">
+                                            Enter your Slack webhook URL to receive notifications when webhooks are triggered
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                                        <h4 className="font-medium text-blue-900 mb-2">How to get a Slack Webhook URL:</h4>
+                                        <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                                            <li>Go to <a href="https://slack.com/apps" target="_blank" rel="noopener noreferrer" className="underline">Slack Apps</a></li>
+                                            <li>Click &quot;Create New App&quot; → &quot;From scratch&quot;</li>
+                                            <li>Name your app and select your workspace</li>
+                                            <li>Go to &quot;Incoming Webhooks&quot; and toggle &quot;Activate Incoming Webhooks&quot;</li>
+                                            <li>Click &quot;Add New Webhook to Workspace&quot;</li>
+                                            <li>Select the channel where you want to receive notifications</li>
+                                            <li>Copy the webhook URL and paste it above</li>
+                                        </ol>
+                                    </div>
+
+                                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                        <h4 className="font-medium text-green-900 mb-2">What you&apos;ll receive:</h4>
+                                        <ul className="text-sm text-green-800 space-y-1 list-disc list-inside">
+                                            <li>Real-time notifications when webhooks are triggered</li>
+                                            <li>Success/failure status with response details</li>
+                                            <li>Response time and status codes</li>
+                                            <li>Daily statistics summary</li>
+                                            <li>Client information (IP, User-Agent)</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            onClick={handleSlackTest}
+                                            disabled={!settings.slackWebhookUrl || slackTesting}
+                                        >
+                                            {slackTesting ? (
+                                                <>
+                                                    <Settings className="h-4 w-4 mr-2 animate-spin" />
+                                                    Testing...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <MessageSquare className="h-4 w-4 mr-2" />
+                                                    Test Slack Webhook
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>

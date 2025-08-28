@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
+    let userId: string | undefined;
+    let period = '7d';
+
     try {
         // Authenticate user
         const authResult = await authMiddleware(request);
@@ -10,8 +13,8 @@ export async function GET(request: NextRequest) {
         }
 
         const { searchParams } = new URL(request.url);
-        const period = searchParams.get('period') || '7d'; // 7d, 30d, 90d
-        const userId = authResult.user!.id;
+        period = searchParams.get('period') || '7d'; // 7d, 30d, 90d
+        userId = authResult.user!.id;
 
         // Dynamic import to avoid build-time initialization
         const { prisma } = await import('@/lib/prisma');
@@ -35,7 +38,7 @@ export async function GET(request: NextRequest) {
         const callbacks = await prisma.callback.findMany({
             where: { userId },
             select: { id: true, name: true },
-        });
+        }).catch(() => []);
 
         // 1. Triggers over time (daily aggregation)
         const triggersOverTime = await prisma.$queryRaw`
@@ -50,7 +53,7 @@ export async function GET(request: NextRequest) {
             AND event LIKE '%triggered%'
             GROUP BY DATE(created_at)
             ORDER BY DATE(created_at)
-        `;
+        `.catch(() => []);
 
         // 2. Triggers by callback
         const triggersByCallback = await prisma.log.groupBy({
@@ -61,7 +64,7 @@ export async function GET(request: NextRequest) {
                 event: { contains: 'triggered' },
             },
             _count: { id: true },
-        });
+        }).catch(() => []);
 
         // Get callback names for the above query
         const callbackMap = new Map(callbacks.map(cb => [cb.id, cb.name]));
@@ -90,7 +93,7 @@ export async function GET(request: NextRequest) {
                     WHEN event LIKE '%failed%' THEN 'Failure'
                     ELSE 'Other'
                 END
-        `;
+        `.catch(() => []);
 
         // 4. Average response times (if we had duration data in logs)
         // For now, we'll show timeout distribution
@@ -98,7 +101,7 @@ export async function GET(request: NextRequest) {
             by: ['timeoutDuration'],
             where: { userId },
             _count: { id: true },
-        });
+        }).catch(() => []);
 
         // 5. Most active hours
         const hourlyActivity = await prisma.$queryRaw`
@@ -112,7 +115,7 @@ export async function GET(request: NextRequest) {
             AND created_at >= ${startDate}
             GROUP BY EXTRACT(hour from created_at)
             ORDER BY EXTRACT(hour from created_at)
-        `;
+        `.catch(() => []);
 
         // 6. Recent activity (last 24 hours)
         const recentActivity = await prisma.log.findMany({
@@ -125,28 +128,34 @@ export async function GET(request: NextRequest) {
             },
             orderBy: { createdAt: 'desc' },
             take: 10,
-        });
+        }).catch(() => []);
 
         return NextResponse.json({
-            triggersOverTime,
-            triggersByCallback: triggersByCallbackWithNames,
-            successFailureData,
-            timeoutDistribution: timeoutDistribution.map(item => ({
+            triggersOverTime: Array.isArray(triggersOverTime) ? triggersOverTime : [],
+            triggersByCallback: Array.isArray(triggersByCallback) ? triggersByCallbackWithNames : [],
+            successFailureData: Array.isArray(successFailureData) ? successFailureData : [],
+            timeoutDistribution: Array.isArray(timeoutDistribution) ? timeoutDistribution.map(item => ({
                 timeout: item.timeoutDuration,
                 count: item._count.id,
-            })),
-            hourlyActivity,
-            recentActivity: recentActivity.map(log => ({
+            })) : [],
+            hourlyActivity: Array.isArray(hourlyActivity) ? hourlyActivity : [],
+            recentActivity: Array.isArray(recentActivity) ? recentActivity.map(log => ({
                 id: log.id,
                 event: log.event,
                 callbackName: log.callback.name,
                 createdAt: log.createdAt,
-            })),
+            })) : [],
             period,
-            totalCallbacks: callbacks.length,
+            totalCallbacks: Array.isArray(callbacks) ? callbacks.length : 0,
         });
     } catch (error) {
         console.error('Analytics fetch error:', error);
+        console.error('Error details:', {
+            message: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
+            userId,
+            period
+        });
         return NextResponse.json(
             { error: 'Failed to fetch analytics data' },
             { status: 500 }

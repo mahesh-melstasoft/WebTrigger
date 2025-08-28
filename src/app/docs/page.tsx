@@ -15,7 +15,8 @@ import {
     Shield,
     Globe,
     Copy,
-    CheckCircle
+    CheckCircle,
+    MessageSquare
 } from 'lucide-react';
 
 export default function Documentation() {
@@ -107,7 +108,7 @@ export default function Documentation() {
 
             <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
                 {/* Quick Navigation */}
-                <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
                     <Link href="/docs/api-reference">
                         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                             <CardHeader className="text-center">
@@ -144,6 +145,20 @@ export default function Documentation() {
                         </Card>
                     </Link>
 
+                    <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => {
+                        const tabsElement = document.querySelector('[role="tablist"]');
+                        const integrationsTab = tabsElement?.querySelector('[value="integrations"]') as HTMLElement;
+                        integrationsTab?.click();
+                    }}>
+                        <CardHeader className="text-center">
+                            <MessageSquare className="h-8 w-8 text-orange-500 mx-auto mb-2" />
+                            <CardTitle className="text-lg">Integrations</CardTitle>
+                            <CardDescription>
+                                Connect with Slack and other services
+                            </CardDescription>
+                        </CardHeader>
+                    </Card>
+
                     <Link href="/dashboard">
                         <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                             <CardHeader className="text-center">
@@ -159,10 +174,11 @@ export default function Documentation() {
 
                 {/* Main Content Tabs */}
                 <Tabs defaultValue="overview" className="space-y-8">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-4">
                         <TabsTrigger value="overview">Overview</TabsTrigger>
                         <TabsTrigger value="quickstart">Quick Start</TabsTrigger>
                         <TabsTrigger value="features">Features</TabsTrigger>
+                        <TabsTrigger value="integrations">Integrations</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="overview" className="space-y-8">
@@ -369,6 +385,219 @@ curl https://your-app.com/api/trigger/token/your-token`}
                                                 <Copy className="h-4 w-4" />
                                             )}
                                         </Button>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="integrations" className="space-y-8">
+                        {/* Slack Integration */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <MessageSquare className="h-6 w-6 text-purple-500" />
+                                    Slack Event Alert System
+                                </CardTitle>
+                                <CardDescription>
+                                    Get real-time notifications about your webhook triggers directly in Slack
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 mb-3">What You&apos;ll Receive</h4>
+                                        <ul className="space-y-2 text-gray-600">
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                ✅ Successful webhook executions
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-red-500" />
+                                                ❌ Failed webhook executions
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-blue-500" />
+                                                📊 Daily statistics and metrics
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-purple-500" />
+                                                🔍 Detailed trigger information
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold text-gray-900 mb-3">Key Features</h4>
+                                        <ul className="space-y-2 text-gray-600">
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Real-time notifications
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Non-blocking execution
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Rich message formatting
+                                            </li>
+                                            <li className="flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                                Performance statistics
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Setup Instructions */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Setup Instructions</CardTitle>
+                                <CardDescription>
+                                    Follow these steps to enable Slack notifications for your webhooks
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                                            1
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900">Create a Slack App</h4>
+                                            <p className="text-gray-600 mt-1">
+                                                Go to <a href="https://api.slack.com/apps" className="text-blue-500 hover:underline" target="_blank" rel="noopener noreferrer">Slack Apps</a>,
+                                                click &quot;Create New App&quot; → &quot;From scratch&quot;, enter your app name, and select your workspace.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                                            2
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900">Enable Incoming Webhooks</h4>
+                                            <p className="text-gray-600 mt-1">
+                                                In your app settings, go to &quot;Features&quot; → &quot;Incoming Webhooks&quot;, toggle it on,
+                                                add a new webhook to your workspace, and copy the webhook URL.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-start gap-4">
+                                        <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center font-semibold">
+                                            3
+                                        </div>
+                                        <div>
+                                            <h4 className="font-semibold text-gray-900">Configure WebTrigger</h4>
+                                            <p className="text-gray-600 mt-1">
+                                                Go to Settings → Slack tab, paste your webhook URL, test the connection, and save changes.
+                                            </p>
+                                            <Button asChild variant="outline" size="sm" className="mt-2">
+                                                <Link href="/settings">
+                                                    Go to Settings
+                                                    <ArrowRight className="h-4 w-4 ml-1" />
+                                                </Link>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Example Notifications */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Example Notifications</CardTitle>
+                                <CardDescription>
+                                    See what your Slack notifications will look like
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="font-semibold text-green-700 mb-3">✅ Success Notification</h4>
+                                        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                                                {`✅ Webhook Triggered
+
+Callback: My API Webhook
+URL: https://api.example.com/webhook
+Time: 2025-08-28 14:30:25
+Status: Success
+
+Status Code: 200
+Response Time: 245ms
+
+Today's Triggers: 15
+Success Rate: 93.3%
+Avg Response Time: 234ms`}
+                                            </pre>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="font-semibold text-red-700 mb-3">❌ Failure Notification</h4>
+                                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                                            <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                                                {`❌ Webhook Failed
+
+Callback: My API Webhook
+URL: https://api.example.com/webhook
+Time: 2025-08-28 14:35:10
+Status: Failed
+
+Details: Connection timeout
+
+Today's Triggers: 16
+Success Rate: 87.5%
+Avg Response Time: 234ms`}
+                                            </pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Troubleshooting */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Troubleshooting</CardTitle>
+                                <CardDescription>
+                                    Common issues and how to resolve them
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                        <h4 className="font-semibold text-yellow-800 mb-2">Test Button Not Working</h4>
+                                        <ul className="text-sm text-yellow-700 space-y-1">
+                                            <li>• Verify your Slack webhook URL is correct</li>
+                                            <li>• Make sure the URL starts with https://hooks.slack.com/</li>
+                                            <li>• Check that your Slack app has permission to post to the selected channel</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <h4 className="font-semibold text-blue-800 mb-2">Not Receiving Notifications</h4>
+                                        <ul className="text-sm text-blue-700 space-y-1">
+                                            <li>• Confirm your webhook URL is saved in WebTrigger settings</li>
+                                            <li>• Check that your Slack app is active and has webhook permissions</li>
+                                            <li>• Verify the selected Slack channel exists and is accessible</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                                        <h4 className="font-semibold text-green-800 mb-2">Security Notes</h4>
+                                        <ul className="text-sm text-green-700 space-y-1">
+                                            <li>• ✅ Webhook URLs are stored securely in your database</li>
+                                            <li>• ✅ Only you can view and modify your Slack webhook URL</li>
+                                            <li>• ✅ Slack notifications include your email for identification</li>
+                                            <li>• ✅ Failed Slack notifications don&apos;t break webhook functionality</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </CardContent>

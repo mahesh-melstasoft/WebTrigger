@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
                 displayName: true,
                 role: true,
                 secret: true,
+                slackWebhookUrl: true,
                 createdAt: true,
             },
         });
@@ -64,6 +65,7 @@ export async function GET(request: NextRequest) {
             colorPalette: 'default',
             triggerLimit,
             secret: user.secret,
+            slackWebhookUrl: user.slackWebhookUrl || '',
             createdAt: user.createdAt.toISOString(),
         };
 
@@ -85,13 +87,14 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const { displayName, appName, appDescription, colorPalette } = await request.json();
+        const { displayName, appName, appDescription, colorPalette, slackWebhookUrl } = await request.json();
 
         // Update user data
         const updatedUser = await prisma.user.update({
             where: { id: authResult.user!.id },
             data: {
                 displayName: displayName || null,
+                slackWebhookUrl: slackWebhookUrl || null,
             },
             select: {
                 id: true,
@@ -99,6 +102,7 @@ export async function PUT(request: NextRequest) {
                 displayName: true,
                 role: true,
                 secret: true,
+                slackWebhookUrl: true,
                 createdAt: true,
             },
         });
@@ -140,6 +144,7 @@ export async function PUT(request: NextRequest) {
             colorPalette: colorPalette || 'default',
             triggerLimit,
             secret: updatedUser.secret,
+            slackWebhookUrl: updatedUser.slackWebhookUrl || '',
             createdAt: updatedUser.createdAt.toISOString(),
         };
 

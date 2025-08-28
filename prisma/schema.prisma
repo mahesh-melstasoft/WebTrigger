@@ -12,17 +12,18 @@ datasource db {
 }
 
 model User {
-  id             String        @id @default(cuid())
-  email          String        @unique
-  password       String
-  displayName    String?
-  secret         String? // For TOTP
-  role           UserRole      @default(FREE)
-  subscriptionId String?
-  subscription   Subscription? @relation
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  id              String        @id @default(cuid())
+  email           String        @unique
+  password        String
+  displayName     String?
+  secret          String? // For TOTP
+  role            UserRole      @default(FREE)
+  subscriptionId  String?
+  subscription    Subscription? @relation
+  isActive        Boolean       @default(true)
+  slackWebhookUrl String? // Slack webhook URL for notifications
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 
   callbacks     Callback[]
   rateLimitLogs RateLimitLog[]
