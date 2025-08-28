@@ -24,7 +24,8 @@ model User {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  callbacks Callback[]
+  callbacks     Callback[]
+  rateLimitLogs RateLimitLog[]
 }
 
 enum UserRole {
@@ -72,6 +73,7 @@ model SubscriptionPlan {
   updatedAt          DateTime @updatedAt
 
   subscriptions Subscription[]
+  rateLimits    RateLimit[]
 }
 
 model Callback {
@@ -84,17 +86,50 @@ model Callback {
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   timeoutDuration Int      @default(30000) // 30 seconds default
+  cachePeriod     Int      @default(0) // Cache period in seconds (0 = no cache)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  logs Log[]
+  logs          Log[]
+  rateLimitLogs RateLimitLog[]
 }
 
 model Log {
-  id         String   @id @default(cuid())
-  event      String
-  details    String?
-  callbackId String
-  callback   Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id           String   @id @default(cuid())
+  event        String
+  details      String?
+  callbackId   String
+  callback     Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  responseTime Int? // Response time in milliseconds
+  statusCode   Int? // HTTP status code
+  success      Boolean  @default(true)
+}
+
+model RateLimit {
+  id                String           @id @default(cuid())
+  planId            String
+  plan              SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  requestsPerSecond Int              @default(1)
+  requestsPerMinute Int              @default(60)
+  requestsPerHour   Int              @default(1000)
+  requestsPerMonth  Int              @default(10000)
+  isActive          Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model RateLimitLog {
+  id           String   @id @default(cuid())
+  callbackId   String
+  callback     Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  period       String // 'second', 'minute', 'hour', 'month'
+  periodStart  DateTime
+  requestCount Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([callbackId, period, periodStart])
 }
