@@ -29,6 +29,8 @@ import {
     Trash2,
     Copy,
     Calendar,
+    Eye,
+    EyeOff,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -116,8 +118,10 @@ export default function SettingsPage() {
     const [newApiKeyName, setNewApiKeyName] = useState('');
     const [newApiKeyPermissions, setNewApiKeyPermissions] = useState<string[]>(['read']);
     const [newApiKeyExpiresAt, setNewApiKeyExpiresAt] = useState('');
+    const [newApiKeyNoExpiration, setNewApiKeyNoExpiration] = useState(false);
     const [creatingApiKey, setCreatingApiKey] = useState(false);
     const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
+    const [visibleApiKeys, setVisibleApiKeys] = useState<Set<string>>(new Set());
     const router = useRouter();
 
     const fetchApiKeys = useCallback(async () => {
@@ -189,7 +193,7 @@ export default function SettingsPage() {
                 body: JSON.stringify({
                     name: newApiKeyName,
                     permissions: newApiKeyPermissions,
-                    expiresAt: newApiKeyExpiresAt || null,
+                    expiresAt: newApiKeyNoExpiration ? null : (newApiKeyExpiresAt || null),
                 }),
             });
 
@@ -245,6 +249,18 @@ export default function SettingsPage() {
     const copyApiKey = (apiKey: string) => {
         navigator.clipboard.writeText(apiKey);
         setSuccess('API key copied to clipboard!');
+    };
+
+    const toggleApiKeyVisibility = (apiKeyId: string) => {
+        setVisibleApiKeys(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(apiKeyId)) {
+                newSet.delete(apiKeyId);
+            } else {
+                newSet.add(apiKeyId);
+            }
+            return newSet;
+        });
     };
 
     const handleSave = async () => {
@@ -807,13 +823,30 @@ export default function SettingsPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label htmlFor="apiKeyExpiresAt">Expiration Date (Optional)</Label>
+                                                        <Label htmlFor="apiKeyExpiresAt">Expiration Date</Label>
                                                         <Input
                                                             id="apiKeyExpiresAt"
                                                             type="datetime-local"
                                                             value={newApiKeyExpiresAt}
                                                             onChange={(e) => setNewApiKeyExpiresAt(e.target.value)}
+                                                            disabled={newApiKeyNoExpiration}
+                                                            min={new Date().toISOString().slice(0, 16)}
                                                         />
+                                                        <div className="flex items-center gap-2 mt-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                id="noExpiration"
+                                                                checked={newApiKeyNoExpiration}
+                                                                onChange={(e) => {
+                                                                    setNewApiKeyNoExpiration(e.target.checked);
+                                                                    if (e.target.checked) {
+                                                                        setNewApiKeyExpiresAt('');
+                                                                    }
+                                                                }}
+                                                                className="rounded"
+                                                            />
+                                                            <Label htmlFor="noExpiration" className="text-sm">No expiration</Label>
+                                                        </div>
                                                     </div>
                                                 </div>
 
@@ -868,6 +901,7 @@ export default function SettingsPage() {
                                                             setNewApiKeyName('');
                                                             setNewApiKeyPermissions(['read']);
                                                             setNewApiKeyExpiresAt('');
+                                                            setNewApiKeyNoExpiration(false);
                                                         }}
                                                     >
                                                         Cancel
@@ -941,11 +975,14 @@ export default function SettingsPage() {
                                                 <Card key={apiKey.id} className="border-gray-200">
                                                     <CardContent className="pt-6">
                                                         <div className="flex items-center justify-between">
-                                                            <div className="space-y-2">
+                                                            <div className="space-y-2 flex-1">
                                                                 <div className="flex items-center gap-2">
                                                                     <h4 className="font-medium">{apiKey.name}</h4>
                                                                     {apiKey.expiresAt && new Date(apiKey.expiresAt) < new Date() && (
                                                                         <Badge variant="destructive">Expired</Badge>
+                                                                    )}
+                                                                    {!apiKey.expiresAt && (
+                                                                        <Badge variant="outline">No Expiration</Badge>
                                                                     )}
                                                                 </div>
                                                                 <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -974,14 +1011,41 @@ export default function SettingsPage() {
                                                                     ))}
                                                                 </div>
                                                             </div>
-                                                            <Button
-                                                                variant="destructive"
-                                                                size="sm"
-                                                                onClick={() => handleDeleteApiKey(apiKey.id)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
+                                                            <div className="flex items-center gap-2">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => toggleApiKeyVisibility(apiKey.id)}
+                                                                >
+                                                                    {visibleApiKeys.has(apiKey.id) ? (
+                                                                        <EyeOff className="h-4 w-4" />
+                                                                    ) : (
+                                                                        <Eye className="h-4 w-4" />
+                                                                    )}
+                                                                </Button>
+                                                                <Button
+                                                                    variant="destructive"
+                                                                    size="sm"
+                                                                    onClick={() => handleDeleteApiKey(apiKey.id)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
                                                         </div>
+                                                        {visibleApiKeys.has(apiKey.id) && (
+                                                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
+                                                                <div className="flex items-center gap-2">
+                                                                    <AlertCircle className="h-4 w-4 text-red-500" />
+                                                                    <div>
+                                                                        <p className="text-sm font-medium text-red-800">API Key Hidden for Security</p>
+                                                                        <p className="text-xs text-red-600 mt-1">
+                                                                            For security reasons, API keys cannot be displayed after creation.
+                                                                            If you need to use this key, create a new one.
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        )}
                                                     </CardContent>
                                                 </Card>
                                             ))}
@@ -1004,20 +1068,21 @@ export default function SettingsPage() {
                                     <div>
                                         <h4 className="font-medium mb-2">Using X-API-Key Header:</h4>
                                         <div className="bg-gray-100 p-3 rounded font-mono text-sm">
-                                            curl -H &quot;X-API-Key: your_api_key_here&quot; https://your-app.com/api/callbacks
+                                            curl -H &quot;X-API-Key: wbk_a1b2c3d4e5f6...&quot; https://your-app.com/api/callbacks
                                         </div>
                                     </div>
                                     <div>
                                         <h4 className="font-medium mb-2">Using Authorization Header:</h4>
                                         <div className="bg-gray-100 p-3 rounded font-mono text-sm">
-                                            curl -H &quot;Authorization: Bearer your_api_key_here&quot; https://your-app.com/api/callbacks
+                                            curl -H &quot;Authorization: Bearer wbk_a1b2c3d4e5f6...&quot; https://your-app.com/api/callbacks
                                         </div>
                                     </div>
                                 </div>
                                 <Alert>
                                     <Key className="h-4 w-4" />
                                     <AlertDescription>
-                                        API keys have the same permissions as your account. Keep them secure and rotate them regularly.
+                                        API keys are 32-byte cryptographically secure keys generated server-side.
+                                        They are shown only once during creation for security. Store them securely and rotate regularly.
                                     </AlertDescription>
                                 </Alert>
                             </CardContent>
