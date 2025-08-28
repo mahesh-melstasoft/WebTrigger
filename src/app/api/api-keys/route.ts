@@ -10,6 +10,10 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Check if user wants to include the actual API key
+        const url = new URL(request.url);
+        const includeKey = url.searchParams.get('includeKey') === 'true';
+
         // Dynamic import to avoid build-time initialization
         const { prisma } = await import('@/lib/prisma');
 
@@ -26,7 +30,8 @@ export async function GET(request: NextRequest) {
                 lastUsedAt: true,
                 createdAt: true,
                 updatedAt: true,
-                // Don't return the actual key for security
+                // Include the actual key only if explicitly requested
+                ...(includeKey && { key: true }),
             },
             orderBy: { createdAt: 'desc' },
         });

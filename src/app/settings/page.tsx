@@ -55,6 +55,7 @@ interface ApiKey {
     expiresAt: string | null;
     lastUsedAt: string | null;
     createdAt: string;
+    key?: string;
 }
 
 const ACCOUNT_TYPES = [
@@ -122,6 +123,7 @@ export default function SettingsPage() {
     const [creatingApiKey, setCreatingApiKey] = useState(false);
     const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
     const [visibleApiKeys, setVisibleApiKeys] = useState<Set<string>>(new Set());
+    const [revealedApiKeys, setRevealedApiKeys] = useState<Map<string, string>>(new Map());
     const router = useRouter();
 
     const fetchApiKeys = useCallback(async () => {
@@ -251,7 +253,32 @@ export default function SettingsPage() {
         setSuccess('API key copied to clipboard!');
     };
 
-    const toggleApiKeyVisibility = (apiKeyId: string) => {
+    const toggleApiKeyVisibility = async (apiKeyId: string) => {
+        const isVisible = visibleApiKeys.has(apiKeyId);
+
+        if (!isVisible && !revealedApiKeys.has(apiKeyId)) {
+            // Fetch the specific API key with the actual key value
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            try {
+                const response = await fetch(`/api/api-keys?includeKey=true&keyId=${apiKeyId}`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+
+                if (response.ok) {
+                    const apiKeyData = await response.json();
+                    if (apiKeyData.key) {
+                        setRevealedApiKeys(prev => new Map(prev.set(apiKeyId, apiKeyData.key)));
+                    }
+                } else {
+                    console.error('Failed to fetch API key');
+                }
+            } catch (error) {
+                console.error('Failed to fetch API key:', error);
+            }
+        }
+
         setVisibleApiKeys(prev => {
             const newSet = new Set(prev);
             if (newSet.has(apiKeyId)) {
@@ -1033,16 +1060,25 @@ export default function SettingsPage() {
                                                             </div>
                                                         </div>
                                                         {visibleApiKeys.has(apiKey.id) && (
-                                                            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded">
-                                                                <div className="flex items-center gap-2">
-                                                                    <AlertCircle className="h-4 w-4 text-red-500" />
-                                                                    <div>
-                                                                        <p className="text-sm font-medium text-red-800">API Key Hidden for Security</p>
-                                                                        <p className="text-xs text-red-600 mt-1">
-                                                                            For security reasons, API keys cannot be displayed after creation.
-                                                                            If you need to use this key, create a new one.
+                                                            <div className="mt-4 p-3 bg-gray-50 rounded border">
+                                                                <div className="flex items-center justify-between">
+                                                                    <div className="flex-1">
+                                                                        <Label className="text-sm font-medium">API Key:</Label>
+                                                                        <div className="mt-1 font-mono text-sm bg-white p-2 rounded border break-all">
+                                                                            {revealedApiKeys.get(apiKey.id) || 'Loading...'}
+                                                                        </div>
+                                                                        <p className="text-xs text-amber-600 mt-1">
+                                                                            ⚠️ Keep this key secure and do not share it publicly.
                                                                         </p>
                                                                     </div>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        onClick={() => copyApiKey(revealedApiKeys.get(apiKey.id) || '')}
+                                                                        disabled={!revealedApiKeys.get(apiKey.id)}
+                                                                    >
+                                                                        <Copy className="h-4 w-4" />
+                                                                    </Button>
                                                                 </div>
                                                             </div>
                                                         )}
@@ -1082,7 +1118,7 @@ export default function SettingsPage() {
                                     <Key className="h-4 w-4" />
                                     <AlertDescription>
                                         API keys are 32-byte cryptographically secure keys generated server-side.
-                                        They are shown only once during creation for security. Store them securely and rotate regularly.
+                                        You can view them by clicking the eye icon, but store them securely and rotate regularly.
                                     </AlertDescription>
                                 </Alert>
                             </CardContent>
