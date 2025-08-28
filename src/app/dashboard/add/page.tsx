@@ -14,6 +14,7 @@ export default function AddCallback() {
     const [name, setName] = useState('');
     const [callbackUrl, setCallbackUrl] = useState('');
     const [activeStatus, setActiveStatus] = useState(true);
+    const [customPath, setCustomPath] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -31,7 +32,7 @@ export default function AddCallback() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ name, callbackUrl, activeStatus }),
+                body: JSON.stringify({ name, callbackUrl, activeStatus, customPath: customPath || undefined }),
             });
 
             const data = await response.json();
@@ -105,6 +106,31 @@ export default function AddCallback() {
                                         required
                                     />
                                 </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="customPath">Custom Trigger Path (Optional)</Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-3 text-sm text-gray-500">/</span>
+                                    <Input
+                                        id="customPath"
+                                        type="text"
+                                        placeholder="my-custom-trigger"
+                                        value={customPath}
+                                        onChange={(e) => setCustomPath(e.target.value)}
+                                        className="pl-8"
+                                        pattern="^[a-zA-Z0-9_-]*$"
+                                        title="Only letters, numbers, hyphens, and underscores allowed"
+                                    />
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Create a custom URL path to trigger this webhook. Leave empty to use the default token-based URL.
+                                </p>
+                                {customPath && (
+                                    <p className="text-sm text-blue-600">
+                                        Your custom URL will be: <code className="bg-blue-50 px-1 rounded">/api/trigger/custom/{customPath}</code>
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex items-center space-x-2">

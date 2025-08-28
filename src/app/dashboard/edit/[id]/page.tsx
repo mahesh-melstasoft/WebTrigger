@@ -16,6 +16,7 @@ interface Callback {
     callbackUrl: string;
     activeStatus: boolean;
     triggerToken: string;
+    customPath?: string | null;
 }
 
 export default function EditCallback() {
@@ -23,6 +24,7 @@ export default function EditCallback() {
     const [callbackUrl, setCallbackUrl] = useState('');
     const [activeStatus, setActiveStatus] = useState(true);
     const [triggerToken, setTriggerToken] = useState('');
+    const [customPath, setCustomPath] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [fetchLoading, setFetchLoading] = useState(true);
@@ -45,6 +47,7 @@ export default function EditCallback() {
                 setCallbackUrl(callback.callbackUrl);
                 setActiveStatus(callback.activeStatus);
                 setTriggerToken(callback.triggerToken);
+                setCustomPath(callback.customPath || '');
             } else {
                 setError('Failed to fetch callback');
             }
@@ -82,7 +85,7 @@ export default function EditCallback() {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ name, callbackUrl, activeStatus }),
+                body: JSON.stringify({ name, callbackUrl, activeStatus, customPath: customPath || undefined }),
             });
 
             const data = await response.json();
@@ -99,20 +102,20 @@ export default function EditCallback() {
         }
     };
 
-    const copyTriggerUrl = async () => {
-        const url = `${window.location.origin}/api/trigger/token/${triggerToken}`;
+    const copyTriggerUrl = async (url?: string) => {
+        const triggerUrl = url || `${window.location.origin}/api/trigger/token/${triggerToken}`;
 
         // Check if clipboard API is available
         if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
             try {
-                await navigator.clipboard.writeText(url);
+                await navigator.clipboard.writeText(triggerUrl);
                 alert('Trigger URL copied to clipboard!');
             } catch {
                 console.error('Failed to copy to clipboard');
-                fallbackCopyTextToClipboard(url);
+                fallbackCopyTextToClipboard(triggerUrl);
             }
         } else {
-            fallbackCopyTextToClipboard(url);
+            fallbackCopyTextToClipboard(triggerUrl);
         }
     };
 
@@ -212,25 +215,72 @@ export default function EditCallback() {
                                 </div>
                             </div>
 
+                            <div className="space-y-2">
+                                <Label htmlFor="customPath">Custom Trigger Path (Optional)</Label>
+                                <div className="relative">
+                                    <span className="absolute left-3 top-3 text-sm text-gray-500">/</span>
+                                    <Input
+                                        id="customPath"
+                                        type="text"
+                                        placeholder="my-custom-trigger"
+                                        value={customPath}
+                                        onChange={(e) => setCustomPath(e.target.value)}
+                                        className="pl-8"
+                                        pattern="^[a-zA-Z0-9_-]*$"
+                                        title="Only letters, numbers, hyphens, and underscores allowed"
+                                    />
+                                </div>
+                                <p className="text-sm text-gray-500">
+                                    Create a custom URL path to trigger this webhook. Leave empty to use only the token-based URL.
+                                </p>
+                            </div>
+
                             {triggerToken && (
-                                <div className="space-y-2">
-                                    <Label>Trigger URL</Label>
-                                    <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md border">
-                                        <ExternalLink className="h-4 w-4 text-gray-400" />
-                                        <code className="text-sm text-gray-700 font-mono flex-1">
-                                            {window.location.origin}/api/trigger/token/{triggerToken}
-                                        </code>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={copyTriggerUrl}
-                                        >
-                                            <Copy className="h-4 w-4" />
-                                        </Button>
+                                <div className="space-y-4">
+                                    <Label>Trigger URLs</Label>
+
+                                    {/* Token-based URL */}
+                                    <div className="space-y-2">
+                                        <p className="text-sm font-medium text-gray-700">Token-based URL:</p>
+                                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-md border">
+                                            <ExternalLink className="h-4 w-4 text-gray-400" />
+                                            <code className="text-sm text-gray-700 font-mono flex-1">
+                                                {window.location.origin}/api/trigger/token/{triggerToken}
+                                            </code>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => copyTriggerUrl(`${window.location.origin}/api/trigger/token/${triggerToken}`)}
+                                            >
+                                                <Copy className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </div>
+
+                                    {/* Custom path URL */}
+                                    {customPath && (
+                                        <div className="space-y-2">
+                                            <p className="text-sm font-medium text-gray-700">Custom Path URL:</p>
+                                            <div className="flex items-center gap-2 p-3 bg-green-50 rounded-md border border-green-200">
+                                                <ExternalLink className="h-4 w-4 text-green-400" />
+                                                <code className="text-sm text-green-700 font-mono flex-1">
+                                                    {window.location.origin}/api/trigger/custom/{customPath}
+                                                </code>
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => copyTriggerUrl(`${window.location.origin}/api/trigger/custom/${customPath}`)}
+                                                >
+                                                    <Copy className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <p className="text-xs text-gray-500">
-                                        This is the public URL that triggers your callback
+                                        These are the public URLs that can trigger your callback
                                     </p>
                                 </div>
                             )}

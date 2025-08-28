@@ -41,7 +41,32 @@ export async function PUT(
         }
 
         const { id } = await params;
-        const { name, callbackUrl, activeStatus } = await request.json();
+        const { name, callbackUrl, activeStatus, customPath } = await request.json();
+
+        // Validate custom path if provided
+        if (customPath !== undefined) {
+            if (customPath && !/^[a-zA-Z0-9_-]+$/.test(customPath)) {
+                return NextResponse.json({
+                    error: 'Custom path can only contain letters, numbers, hyphens, and underscores'
+                }, { status: 400 });
+            }
+
+            // Check if custom path is already taken by another callback
+            if (customPath) {
+                const existingCallback = await prisma.callback.findFirst({
+                    where: {
+                        customPath,
+                        id: { not: id } // Exclude current callback
+                    }
+                });
+
+                if (existingCallback) {
+                    return NextResponse.json({
+                        error: 'Custom path is already taken. Please choose a different path.'
+                    }, { status: 409 });
+                }
+            }
+        }
 
         const callback = await prisma.callback.updateMany({
             where: { id, userId },
@@ -49,6 +74,7 @@ export async function PUT(
                 ...(name && { name }),
                 ...(callbackUrl && { callbackUrl }),
                 ...(activeStatus !== undefined && { activeStatus }),
+                ...(customPath !== undefined && { customPath: customPath || null }),
             },
         });
 

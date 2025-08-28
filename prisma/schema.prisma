@@ -80,6 +80,7 @@ model Callback {
   callbackUrl     String
   activeStatus    Boolean  @default(true)
   triggerToken    String?  @unique @default(uuid())
+  customPath      String?  @unique // Custom URL path for triggering
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   timeoutDuration Int      @default(30000) // 30 seconds default

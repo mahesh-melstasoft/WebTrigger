@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
         // Check if this is the first user to make them admin
         const userCount = await prisma.user.count();
         const isFirstUser = userCount === 0;
-        const userRole = isFirstUser ? 'ADMIN' : 'FREE';
+        const userRole = isFirstUser ? 'ADMIN' : 'PRO'; // Default to PRO for beta period
 
         const hashedPassword = await hashPassword(password);
 
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
                     email,
                     password: hashedPassword,
                     secret: `temp_${secret.base32}`, // Temporary secret until verified
-                    role: userRole as 'ADMIN' | 'FREE',
+                    role: userRole as 'ADMIN' | 'PRO',
                     isActive: false, // Account inactive until TOTP verification
                 },
             });
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
                 message: isFirstUser
                     ? 'Account created as admin. Please scan the QR code and verify with TOTP to complete setup.'
-                    : 'Account created. Please scan the QR code and verify with TOTP to complete setup.',
+                    : 'Account created with PRO plan. Please scan the QR code and verify with TOTP to complete setup.',
                 userId: user.id,
                 qrCodeUrl: qrCodeDataUrl,
                 secret: secret.base32,
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
                     email,
                     password: hashedPassword,
                     secret: null, // No TOTP secret
-                    role: userRole as 'ADMIN' | 'FREE',
+                    role: userRole as 'ADMIN' | 'PRO',
                     isActive: true, // Account active immediately
                 },
             });
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({
                 message: isFirstUser
                     ? 'Admin account created successfully! You can now log in.'
-                    : 'Account created successfully! You can now log in.',
+                    : 'Account created with PRO plan successfully! You can now log in.',
                 userId: user.id,
                 requiresVerification: false,
                 twoFactorEnabled: false,

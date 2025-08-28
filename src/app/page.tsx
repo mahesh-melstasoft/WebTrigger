@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,15 +20,11 @@ import {
 } from 'lucide-react';
 
 export default function LandingPage() {
-  const router = useRouter();
+  // Removed unused router
 
   useEffect(() => {
-    // Check if user is already logged in
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.push('/dashboard');
-    }
-  }, [router]);
+    // No longer redirecting to dashboard - users can access homepage freely
+  }, []);
 
   const features = [
     {
@@ -132,8 +127,27 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Navigation */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 -z-10">
+        {/* Floating orbs with neon colors */}
+        <div className="absolute top-20 left-10 w-32 h-32 bg-gradient-to-br from-cyan-400 to-blue-500 rounded-full opacity-20 animate-float-slow blur-xl"></div>
+        <div className="absolute top-40 right-20 w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full opacity-25 animate-float-reverse blur-lg"></div>
+        <div className="absolute bottom-32 left-1/4 w-40 h-40 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-full opacity-15 animate-float-medium blur-2xl"></div>
+        <div className="absolute top-1/3 right-10 w-28 h-28 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full opacity-20 animate-float-reverse-slow blur-xl"></div>
+        <div className="absolute bottom-20 right-1/3 w-36 h-36 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full opacity-18 animate-float-slow blur-2xl"></div>
+
+        {/* Geometric shapes */}
+        <div className="absolute top-16 left-1/3 w-2 h-2 bg-cyan-400 rounded-full opacity-60 animate-pulse-glow"></div>
+        <div className="absolute top-32 right-1/4 w-1 h-1 bg-pink-400 rounded-full opacity-70 animate-pulse-glow-delayed"></div>
+        <div className="absolute bottom-40 left-16 w-3 h-3 bg-purple-400 rounded-full opacity-50 animate-pulse-glow"></div>
+        <div className="absolute top-2/3 right-16 w-2 h-2 bg-blue-400 rounded-full opacity-65 animate-pulse-glow-delayed"></div>
+
+        {/* Subtle grid overlay */}
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-200 to-transparent animate-shimmer"></div>
+        </div>
+      </div>
       <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-4">
