@@ -1,0 +1,223 @@
+// Test Prisma schema file for SQLite
+generator client {
+    provider = "prisma-client-js"
+    output   = "../src/generated/prisma"
+}
+
+datasource db {
+    provider = "sqlite"
+    url      = "file:./test.db"
+}
+
+model User {
+    id              String        @id @default(cuid())
+    email           String        @unique
+    password        String
+    displayName     String?
+    secret          String? // For TOTP
+    role            UserRole      @default(FREE)
+    subscriptionId  String?
+    subscription    Subscription? @relation
+    isActive        Boolean       @default(true)
+    slackWebhookUrl String? // Slack webhook URL for notifications
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+
+    callbacks          Callback[]
+    rateLimitLogs      RateLimitLog[]
+    apiKeys            ApiKey[]
+    actions            Action[]
+    serviceCredentials ServiceCredential[]
+}
+
+enum UserRole {
+    ADMIN
+    PREMIUM
+    PRO
+    FREE
+}
+
+model Subscription {
+    id                   String             @id @default(cuid())
+    planId               String
+    plan                 SubscriptionPlan   @relation(fields: [planId], references: [id])
+    userId               String             @unique
+    user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+    stripeCustomerId     String?            @unique
+    stripeSubscriptionId String?            @unique
+    status               SubscriptionStatus @default(ACTIVE)
+    currentPeriodStart   DateTime?
+    currentPeriodEnd     DateTime?
+    createdAt            DateTime           @default(now())
+    updatedAt            DateTime           @updatedAt
+}
+
+enum SubscriptionStatus {
+    ACTIVE
+    INACTIVE
+    CANCELLED
+    PAST_DUE
+}
+
+model SubscriptionPlan {
+    id                 String   @id @default(cuid())
+    name               String   @unique
+    description        String?
+    price              Float
+    currency           String   @default("USD")
+    interval           String   @default("month") // month, year
+    maxTriggers        Int
+    maxTimeoutDuration Int // in seconds
+    features           String[] // JSON array of features
+    isActive           Boolean  @default(true)
+    stripePriceId      String?  @unique
+    createdAt          DateTime @default(now())
+    updatedAt          DateTime @updatedAt
+
+    subscriptions Subscription[]
+    rateLimits    RateLimit[]
+}
+
+model Callback {
+    id              String   @id @default(cuid())
+    name            String
+    callbackUrl     String
+    activeStatus    Boolean  @default(true)
+    triggerToken    String?  @unique
+    customPath      String?  @unique // Custom URL path for triggering
+    userId          String
+    user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    timeoutDuration Int      @default(30000) // 30 seconds default
+    cachePeriod     Int      @default(0) // Cache period in seconds (0 = no cache)
+    createdAt       DateTime @default(now())
+    updatedAt       DateTime @updatedAt
+
+    logs          Log[]
+    rateLimitLogs RateLimitLog[]
+    actions       Action[]
+    executions    ActionExecution[]
+}
+
+model Log {
+    id           String   @id @default(cuid())
+    event        String
+    details      String?
+    callbackId   String
+    callback     Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+    createdAt    DateTime @default(now())
+    responseTime Int? // Response time in milliseconds
+    statusCode   Int? // HTTP status code
+    success      Boolean  @default(true)
+}
+
+model RateLimit {
+    id                String           @id @default(cuid())
+    planId            String
+    plan              SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+    requestsPerSecond Int              @default(1)
+    requestsPerMinute Int              @default(60)
+    requestsPerHour   Int              @default(1000)
+    requestsPerMonth  Int              @default(10000)
+    isActive          Boolean          @default(true)
+    createdAt         DateTime         @default(now())
+    updatedAt         DateTime         @updatedAt
+}
+
+model ApiKey {
+    id          String    @id @default(cuid())
+    name        String
+    key         String    @unique
+    userId      String
+    user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    permissions String[] // Array of permissions: ['read', 'write', 'admin']
+    expiresAt   DateTime?
+    lastUsedAt  DateTime?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    @@map("api_keys")
+}
+
+model RateLimitLog {
+    id           String   @id @default(cuid())
+    callbackId   String
+    callback     Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+    userId       String
+    user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    period       String // 'second', 'minute', 'hour', 'month'
+    periodStart  DateTime
+    requestCount Int      @default(1)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    @@unique([callbackId, period, periodStart])
+}
+
+model Action {
+    id         String     @id @default(cuid())
+    callbackId String
+    callback   Callback   @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+    userId     String
+    user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    type       ActionType
+    config     Json
+    enabled    Boolean    @default(true)
+    order      Int        @default(0)
+    parallel   Boolean    @default(false)
+    createdAt  DateTime   @default(now())
+    updatedAt  DateTime   @updatedAt
+
+    executions ActionExecution[]
+}
+
+model ActionExecution {
+    id         String                @id @default(cuid())
+    actionId   String
+    action     Action                @relation(fields: [actionId], references: [id], onDelete: Cascade)
+    callbackId String
+    callback   Callback              @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+    status     ActionExecutionStatus @default(PENDING)
+    attempt    Int                   @default(0)
+    response   Json?
+    error      String?
+    durationMs Int?
+    createdAt  DateTime              @default(now())
+    updatedAt  DateTime              @updatedAt
+}
+
+model ServiceCredential {
+    id        String          @id @default(cuid())
+    userId    String
+    user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+    name      String
+    provider  ServiceProvider
+    secret    String
+    meta      Json?
+    createdAt DateTime        @default(now())
+    updatedAt DateTime        @updatedAt
+}
+
+enum ActionType {
+    HTTP_POST
+    SLACK
+    EMAIL
+    SMS
+    STORE
+    QUEUE
+    DISCORD
+}
+
+enum ActionExecutionStatus {
+    PENDING
+    RUNNING
+    SUCCESS
+    FAILED
+}
+
+enum ServiceProvider {
+    SENDGRID
+    TWILIO
+    SLACK
+    DISCORD
+    GENERIC
+}
