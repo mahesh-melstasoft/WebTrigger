@@ -31,6 +31,8 @@ import {
     Calendar,
     Eye,
     EyeOff,
+    Mail,
+    Database,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -48,14 +50,20 @@ interface UserSettings {
     createdAt: string;
 }
 
+interface ServiceCredential {
+    id: string;
+    name: string;
+    provider: string;
+    createdAt: string;
+}
+
 interface ApiKey {
     id: string;
     name: string;
     permissions: string[];
-    expiresAt: string | null;
-    lastUsedAt: string | null;
+    expiresAt?: string;
     createdAt: string;
-    key?: string;
+    lastUsedAt?: string;
 }
 
 const ACCOUNT_TYPES = [
@@ -124,6 +132,12 @@ export default function SettingsPage() {
     const [createdApiKey, setCreatedApiKey] = useState<string | null>(null);
     const [visibleApiKeys, setVisibleApiKeys] = useState<Set<string>>(new Set());
     const [revealedApiKeys, setRevealedApiKeys] = useState<Map<string, string>>(new Map());
+    const [serviceCredentials, setServiceCredentials] = useState<ServiceCredential[]>([]);
+    const [showCreateCredential, setShowCreateCredential] = useState(false);
+    const [newCredentialName, setNewCredentialName] = useState('');
+    const [newCredentialProvider, setNewCredentialProvider] = useState('SENDGRID');
+    const [newCredentialSecret, setNewCredentialSecret] = useState('');
+    const [creatingCredential, setCreatingCredential] = useState(false);
     const router = useRouter();
 
     const fetchApiKeys = useCallback(async () => {
@@ -139,10 +153,28 @@ export default function SettingsPage() {
                 const data = await response.json();
                 setApiKeys(data);
             }
-        } catch (error) {
-            console.error('Failed to fetch API keys:', error);
+        } catch {
+            console.error('Failed to fetch API keys');
         }
-    }, [router]);
+    }, []);
+
+    const fetchServiceCredentials = useCallback(async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        try {
+            const response = await fetch('/api/service-credentials', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setServiceCredentials(data);
+            }
+        } catch {
+            console.error('Failed to fetch service credentials');
+        }
+    }, []);
 
     const fetchSettings = useCallback(async () => {
         const token = localStorage.getItem('token');
@@ -166,7 +198,7 @@ export default function SettingsPage() {
                 setError('Failed to fetch settings');
             }
         } catch {
-            setError('An error occurred while fetching settings');
+            console.error('An error occurred while fetching settings');
         } finally {
             setLoading(false);
         }
@@ -175,7 +207,8 @@ export default function SettingsPage() {
     useEffect(() => {
         fetchSettings();
         fetchApiKeys();
-    }, [fetchSettings, fetchApiKeys]);
+        fetchServiceCredentials();
+    }, [fetchSettings, fetchApiKeys, fetchServiceCredentials]);
 
     const handleCreateApiKey = async () => {
         if (!newApiKeyName.trim()) return;
@@ -212,8 +245,8 @@ export default function SettingsPage() {
                 const errorData = await response.json();
                 setError(errorData.error || 'Failed to create API key');
             }
-        } catch (error) {
-            setError('An error occurred while creating the API key');
+        } catch {
+            console.error('An error occurred while creating the API key');
         } finally {
             setCreatingApiKey(false);
         }
@@ -243,8 +276,8 @@ export default function SettingsPage() {
                 const errorData = await response.json();
                 setError(errorData.error || 'Failed to delete API key');
             }
-        } catch (error) {
-            setError('An error occurred while deleting the API key');
+        } catch {
+            console.error('An error occurred while deleting the API key');
         }
     };
 
@@ -270,9 +303,12 @@ export default function SettingsPage() {
                     const apiKeyData = await response.json();
                     if (apiKeyData.key) {
                         setRevealedApiKeys(prev => new Map(prev.set(apiKeyId, apiKeyData.key)));
+                    } else {
+                        console.error('API key not found or no key returned');
                     }
                 } else {
-                    console.error('Failed to fetch API key');
+                    const errorData = await response.json();
+                    console.error('Failed to fetch API key:', errorData.error);
                 }
             } catch (error) {
                 console.error('Failed to fetch API key:', error);
@@ -288,6 +324,75 @@ export default function SettingsPage() {
             }
             return newSet;
         });
+    };
+
+    const handleCreateCredential = async () => {
+        if (!newCredentialName.trim() || !newCredentialSecret.trim()) return;
+
+        setCreatingCredential(true);
+        setError('');
+        setSuccess('');
+
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/service-credentials', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    name: newCredentialName,
+                    provider: newCredentialProvider,
+                    secret: newCredentialSecret,
+                }),
+            });
+
+            if (response.ok) {
+                setShowCreateCredential(false);
+                setNewCredentialName('');
+                setNewCredentialProvider('SENDGRID');
+                setNewCredentialSecret('');
+                fetchServiceCredentials(); // Refresh the list
+                setSuccess('Service credential created successfully!');
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to create service credential');
+            }
+        } catch {
+            setError('An error occurred while creating the service credential');
+        } finally {
+            setCreatingCredential(false);
+        }
+    };
+
+    const handleDeleteCredential = async (credentialId: string) => {
+        if (!confirm('Are you sure you want to delete this service credential? This action cannot be undone.')) {
+            return;
+        }
+
+        setError('');
+        setSuccess('');
+
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch(`/api/service-credentials/${credentialId}`, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+
+            if (response.ok) {
+                setServiceCredentials(serviceCredentials.filter(cred => cred.id !== credentialId));
+                setSuccess('Service credential deleted successfully!');
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to delete service credential');
+            }
+        } catch {
+            setError('An error occurred while deleting the service credential');
+        }
     };
 
     const handleSave = async () => {
@@ -558,11 +663,12 @@ export default function SettingsPage() {
                 )}
 
                 <Tabs defaultValue="app" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-7">
+                    <TabsList className="grid w-full grid-cols-8">
                         <TabsTrigger value="app">App Branding</TabsTrigger>
                         <TabsTrigger value="account">Account</TabsTrigger>
                         <TabsTrigger value="security">Security</TabsTrigger>
                         <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+                        <TabsTrigger value="actions">Actions</TabsTrigger>
                         <TabsTrigger value="appearance">Appearance</TabsTrigger>
                         <TabsTrigger value="slack">Slack</TabsTrigger>
                         <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -1121,6 +1227,222 @@ export default function SettingsPage() {
                                         You can view them by clicking the eye icon, but store them securely and rotate regularly.
                                     </AlertDescription>
                                 </Alert>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="actions" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Zap className="h-5 w-5" />
+                                    Actions & Service Credentials
+                                </CardTitle>
+                                <CardDescription>
+                                    Configure additional actions to run when your webhooks are triggered, and manage your service credentials
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {/* Service Credentials Section */}
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <h3 className="text-lg font-medium">Service Credentials</h3>
+                                        <Button
+                                            onClick={() => setShowCreateCredential(!showCreateCredential)}
+                                            variant="outline"
+                                            size="sm"
+                                        >
+                                            <Plus className="h-4 w-4 mr-2" />
+                                            Add Credential
+                                        </Button>
+                                    </div>
+
+                                    {/* Create Service Credential Form */}
+                                    {showCreateCredential && (
+                                        <Card className="border-green-200 bg-green-50">
+                                            <CardHeader>
+                                                <CardTitle className="text-green-900">Add Service Credential</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="grid gap-4 md:grid-cols-2">
+                                                    <div>
+                                                        <Label htmlFor="credName">Credential Name</Label>
+                                                        <Input
+                                                            id="credName"
+                                                            value={newCredentialName}
+                                                            onChange={(e) => setNewCredentialName(e.target.value)}
+                                                            placeholder="My SendGrid API Key"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label htmlFor="credProvider">Provider</Label>
+                                                        <select
+                                                            id="credProvider"
+                                                            value={newCredentialProvider}
+                                                            onChange={(e) => setNewCredentialProvider(e.target.value)}
+                                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                        >
+                                                            <option value="SENDGRID">SendGrid</option>
+                                                            <option value="SLACK">Slack</option>
+                                                            <option value="DISCORD">Discord</option>
+                                                            <option value="GENERIC">Generic</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <Label htmlFor="credSecret">API Key / Secret</Label>
+                                                    <Input
+                                                        id="credSecret"
+                                                        type="password"
+                                                        value={newCredentialSecret}
+                                                        onChange={(e) => setNewCredentialSecret(e.target.value)}
+                                                        placeholder="Enter your API key or webhook URL"
+                                                    />
+                                                    <p className="text-sm text-gray-600 mt-1">
+                                                        This will be encrypted and stored securely
+                                                    </p>
+                                                </div>
+
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        onClick={handleCreateCredential}
+                                                        disabled={creatingCredential || !newCredentialName.trim() || !newCredentialSecret.trim()}
+                                                    >
+                                                        {creatingCredential ? (
+                                                            <>
+                                                                <Settings className="h-4 w-4 mr-2 animate-spin" />
+                                                                Creating...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Key className="h-4 w-4 mr-2" />
+                                                                Add Credential
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        onClick={() => {
+                                                            setShowCreateCredential(false);
+                                                            setNewCredentialName('');
+                                                            setNewCredentialProvider('SENDGRID');
+                                                            setNewCredentialSecret('');
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    )}
+
+                                    {/* Service Credentials List */}
+                                    <div className="space-y-4">
+                                        {serviceCredentials.length === 0 ? (
+                                            <div className="text-center py-8">
+                                                <Key className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                                <h3 className="text-lg font-medium text-gray-900 mb-2">No service credentials</h3>
+                                                <p className="text-gray-600 mb-4">
+                                                    Add API keys for services like SendGrid, Slack, etc. to enable additional webhook actions.
+                                                </p>
+                                                <Button onClick={() => setShowCreateCredential(true)}>
+                                                    <Plus className="h-4 w-4 mr-2" />
+                                                    Add Your First Credential
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            serviceCredentials.map((cred) => (
+                                                <Card key={cred.id} className="border-gray-200">
+                                                    <CardContent className="pt-6">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="space-y-2">
+                                                                <div className="flex items-center gap-2">
+                                                                    <h4 className="font-medium">{cred.name}</h4>
+                                                                    <Badge variant="outline">{cred.provider}</Badge>
+                                                                </div>
+                                                                <p className="text-sm text-gray-600">
+                                                                    Created: {new Date(cred.createdAt).toLocaleDateString()}
+                                                                </p>
+                                                            </div>
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() => handleDeleteCredential(cred.id)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Available Actions Info */}
+                                <Card>
+                                    <CardHeader>
+                                        <CardTitle>Available Actions</CardTitle>
+                                        <CardDescription>
+                                            Actions you can configure for your webhooks
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid gap-4 md:grid-cols-2">
+                                            <div className="p-4 border rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <MessageSquare className="h-5 w-5 text-blue-500" />
+                                                    <h4 className="font-medium">Slack Notification</h4>
+                                                </div>
+                                                <p className="text-sm text-gray-600">
+                                                    Send webhook notifications to Slack channels
+                                                </p>
+                                                <Badge variant="outline" className="mt-2">Requires Slack Webhook URL</Badge>
+                                            </div>
+
+                                            <div className="p-4 border rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Mail className="h-5 w-5 text-green-500" />
+                                                    <h4 className="font-medium">Email via SendGrid</h4>
+                                                </div>
+                                                <p className="text-sm text-gray-600">
+                                                    Send email notifications when webhooks trigger
+                                                </p>
+                                                <Badge variant="outline" className="mt-2">Requires SendGrid API Key</Badge>
+                                            </div>
+
+                                            <div className="p-4 border rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Settings className="h-5 w-5 text-purple-500" />
+                                                    <h4 className="font-medium">HTTP POST (Enhanced)</h4>
+                                                </div>
+                                                <p className="text-sm text-gray-600">
+                                                    Forward webhooks with HMAC signing and custom headers
+                                                </p>
+                                                <Badge variant="outline" className="mt-2">No additional credentials needed</Badge>
+                                            </div>
+
+                                            <div className="p-4 border rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <Database className="h-5 w-5 text-orange-500" />
+                                                    <h4 className="font-medium">Store to Database</h4>
+                                                </div>
+                                                <p className="text-sm text-gray-600">
+                                                    Store webhook payloads for audit and analysis
+                                                </p>
+                                                <Badge variant="outline" className="mt-2">Built-in</Badge>
+                                            </div>
+                                        </div>
+
+                                        <Alert>
+                                            <Zap className="h-4 w-4" />
+                                            <AlertDescription>
+                                                Actions are configured per webhook in the dashboard. Add your service credentials above to enable email and Slack actions.
+                                            </AlertDescription>
+                                        </Alert>
+                                    </CardContent>
+                                </Card>
                             </CardContent>
                         </Card>
                     </TabsContent>

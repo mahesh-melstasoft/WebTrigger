@@ -13,9 +13,36 @@ export async function GET(request: NextRequest) {
         // Check if user wants to include the actual API key
         const url = new URL(request.url);
         const includeKey = url.searchParams.get('includeKey') === 'true';
+        const keyId = url.searchParams.get('keyId');
 
         // Dynamic import to avoid build-time initialization
         const { prisma } = await import('@/lib/prisma');
+
+        // If keyId is provided, return a single API key
+        if (keyId && includeKey) {
+            const apiKey = await prisma.apiKey.findFirst({
+                where: {
+                    id: keyId,
+                    userId: authResult.user!.id,
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    permissions: true,
+                    expiresAt: true,
+                    lastUsedAt: true,
+                    createdAt: true,
+                    updatedAt: true,
+                    key: true, // Include the actual key for revelation
+                },
+            });
+
+            if (!apiKey) {
+                return NextResponse.json({ error: 'API key not found' }, { status: 404 });
+            }
+
+            return NextResponse.json(apiKey);
+        }
 
         // Get all API keys for the user
         const apiKeys = await prisma.apiKey.findMany({

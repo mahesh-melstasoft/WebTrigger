@@ -25,9 +25,11 @@ model User {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  callbacks     Callback[]
-  rateLimitLogs RateLimitLog[]
-  apiKeys       ApiKey[]
+  callbacks          Callback[]
+  rateLimitLogs      RateLimitLog[]
+  apiKeys            ApiKey[]
+  actions            Action[]
+  serviceCredentials ServiceCredential[]
 }
 
 enum UserRole {
@@ -94,6 +96,8 @@ model Callback {
 
   logs          Log[]
   rateLimitLogs RateLimitLog[]
+  actions       Action[]
+  executions    ActionExecution[]
 }
 
 model Log {
@@ -149,4 +153,76 @@ model RateLimitLog {
   updatedAt    DateTime @updatedAt
 
   @@unique([callbackId, period, periodStart])
+}
+
+// Actions allow callbacks to run multiple, pluggable tasks when triggered.
+model Action {
+  id         String     @id @default(cuid())
+  callbackId String
+  callback   Callback   @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       ActionType
+  config     Json
+  enabled    Boolean    @default(true)
+  order      Int        @default(0)
+  parallel   Boolean    @default(false)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  executions ActionExecution[]
+}
+
+model ActionExecution {
+  id         String                @id @default(cuid())
+  actionId   String
+  action     Action                @relation(fields: [actionId], references: [id], onDelete: Cascade)
+  callbackId String
+  callback   Callback              @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+  status     ActionExecutionStatus @default(PENDING)
+  attempt    Int                   @default(0)
+  response   Json?
+  error      String?
+  durationMs Int?
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+}
+
+model ServiceCredential {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  provider  ServiceProvider
+  // encrypted secret blob (e.g. API key) stored as Base64
+  secret    String
+  // optional additional JSON metadata (masked on reads)
+  meta      Json?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+}
+
+enum ActionType {
+  HTTP_POST
+  SLACK
+  EMAIL
+  SMS
+  STORE
+  QUEUE
+  DISCORD
+}
+
+enum ActionExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+enum ServiceProvider {
+  SENDGRID
+  TWILIO
+  SLACK
+  DISCORD
+  GENERIC
 }
