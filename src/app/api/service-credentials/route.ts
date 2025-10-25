@@ -9,12 +9,12 @@ export async function GET(request: NextRequest) {
         const { prisma } = await import('@/lib/prisma');
         const creds = await prisma.serviceCredential.findMany({ where: { userId: auth.user!.id } });
         // Mask secret before returning
-        const masked = creds.map((c: { id: string; name: string; provider: string; meta: unknown; createdAt: Date }) => ({ 
-            id: c.id, 
-            name: c.name, 
-            provider: c.provider, 
-            meta: c.meta, 
-            createdAt: c.createdAt 
+        const masked = creds.map((c: { id: string; name: string; provider: string; meta: unknown; createdAt: Date }) => ({
+            id: c.id,
+            name: c.name,
+            provider: c.provider,
+            meta: c.meta,
+            createdAt: c.createdAt
         }));
         return NextResponse.json(masked);
     } catch (error) {
