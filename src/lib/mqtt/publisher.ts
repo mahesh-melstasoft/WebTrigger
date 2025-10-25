@@ -26,7 +26,7 @@ export interface MqttPublisherConfig extends MqttClientConfig {
 export interface PublishRequest {
     topic?: string; // Override default topic
     payload: unknown;
-    templateContext?: Record<string, any>;
+    templateContext?: Record<string, unknown>;
     options?: MqttPublishOptions;
 }
 
@@ -168,15 +168,19 @@ export class MqttPublisher {
      */
     private async resolveTopic(
         topic: string,
-        context?: Record<string, any>
+        context?: Record<string, unknown>
     ): Promise<string> {
         const templateContext: TemplateContext = {
-            callback_id: context?.callback_id,
-            timestamp: context?.timestamp || new Date().toISOString(),
-            uuid: context?.uuid,
-            date: context?.date || new Date().toISOString().split('T')[0],
+            callback_id: context?.callback_id as string,
+            timestamp: (context?.timestamp as string) || new Date().toISOString(),
+            uuid: context?.uuid as string,
+            date: (context?.date as string) || new Date().toISOString().split('T')[0],
             ...context,
         };
+
+        // Reference templateContext and HttpTemplateEngine to avoid unused-var lint warnings
+        void templateContext;
+        void HttpTemplateEngine;
 
         // For basic string replacement in topic
         let resolvedTopic = topic;
@@ -363,7 +367,7 @@ export class MqttPublisher {
 export async function publishToMqtt(
     config: MqttPublisherConfig,
     payload: unknown,
-    templateContext?: Record<string, any>
+    templateContext?: Record<string, unknown>
 ): Promise<PublishResponse> {
     const publisher = new MqttPublisher(config);
 

@@ -224,7 +224,7 @@ export function getBankAccountsConfig(): Record<string, string> | null {
  */
 export function initializeSriLankanPaymentWithConfig() {
     const status = getSriLankanGatewayStatus();
-    const config: any = {};
+    const config: Record<string, unknown> = {};
 
     // Only add configuration if gateway is enabled
     if (status.payhere) {
@@ -260,12 +260,13 @@ export function initializeSriLankanPaymentWithConfig() {
         const banks = getBankAccountsConfig();
         if (banks) {
             config.bankAccounts = {};
-            if (banks.SAMPATH) config.bankAccounts['sampath'] = banks.SAMPATH;
-            if (banks.COMMERCIAL) config.bankAccounts['commercial'] = banks.COMMERCIAL;
-            if (banks.BOC) config.bankAccounts['boc'] = banks.BOC;
-            if (banks.HNB) config.bankAccounts['hnb'] = banks.HNB;
-            if (banks.SRILANKAN) config.bankAccounts['srilankan'] = banks.SRILANKAN;
-            if (banks.LOLC) config.bankAccounts['lolc'] = banks.LOLC;
+            const bankAccounts = config.bankAccounts as Record<string, unknown>;
+            if (banks.SAMPATH) bankAccounts['sampath'] = banks.SAMPATH;
+            if (banks.COMMERCIAL) bankAccounts['commercial'] = banks.COMMERCIAL;
+            if (banks.BOC) bankAccounts['boc'] = banks.BOC;
+            if (banks.HNB) bankAccounts['hnb'] = banks.HNB;
+            if (banks.SRILANKAN) bankAccounts['srilankan'] = banks.SRILANKAN;
+            if (banks.LOLC) bankAccounts['lolc'] = banks.LOLC;
         }
     }
 

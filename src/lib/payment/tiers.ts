@@ -11,7 +11,7 @@ export interface DonationTier {
     description: string;
     benefits: string[];
     platform?: string; // stripe, paypal, razorpay, etc
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
 }
 
 /**

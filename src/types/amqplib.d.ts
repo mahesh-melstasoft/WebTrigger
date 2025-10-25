@@ -12,20 +12,20 @@ declare module 'amqplib' {
         assertExchange(
             exchange: string,
             type: 'direct' | 'topic' | 'fanout' | 'headers',
-            options?: any
+            options?: Record<string, unknown>
         ): Promise<Exchange>;
-        assertQueue(queue: string, options?: any): Promise<Queue>;
+        assertQueue(queue: string, options?: Record<string, unknown>): Promise<Queue>;
         bindQueue(queue: string, exchange: string, routingKey: string): Promise<void>;
         publish(
             exchange: string,
             routingKey: string,
             content: Buffer,
-            options?: any
+            options?: Record<string, unknown>
         ): boolean;
         consume(
             queue: string,
             onMessage: (msg: ConsumeMessage | null) => void,
-            options?: any
+            options?: Record<string, unknown>
         ): Promise<Consume>;
         ack(message: ConsumeMessage): void;
         nack(message: ConsumeMessage, allUpTo?: boolean, requeue?: boolean): void;
@@ -39,7 +39,7 @@ declare module 'amqplib' {
             exchange: string,
             routingKey: string,
             content: Buffer,
-            options?: any,
+            options?: Record<string, unknown>,
             callback?: (err: Error | null, ok?: Confirm) => void
         ): boolean;
     }
@@ -66,7 +66,7 @@ declare module 'amqplib' {
         properties: {
             contentType?: string;
             contentEncoding?: string;
-            headers?: any;
+            headers?: Record<string, unknown>;
             delivery_mode?: number;
             priority?: number;
             correlation_id?: string;
@@ -89,7 +89,7 @@ declare module 'amqplib' {
     }
 
     function connect(
-        url: string | any,
-        socketOptions?: any
+        url: string | Record<string, unknown>,
+        socketOptions?: Record<string, unknown>
     ): Promise<Connection>;
 }

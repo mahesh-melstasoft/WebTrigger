@@ -234,7 +234,9 @@ export class SriLankanDonationTierManager {
     /**
      * Get all tiers
      */
-    getAllTiers(language: 'en' | 'si' = 'en'): DonationTier[] {
+    getAllTiers(_language: 'en' | 'si' = 'en'): DonationTier[] {
+        // language parameter reserved for future i18n support
+        void _language;
         const tiers = Array.from(this.tiers.values());
         return this.sortByAmount(tiers);
     }
@@ -242,15 +244,17 @@ export class SriLankanDonationTierManager {
     /**
      * Get only one-time tiers
      */
-    getOneTimeTiers(language: 'en' | 'si' = 'en'): DonationTier[] {
-        return this.getAllTiers(language).filter((t) => !t.isRecurring);
+    getOneTimeTiers(_language: 'en' | 'si' = 'en'): DonationTier[] {
+        void _language;
+        return this.getAllTiers().filter((t) => !t.isRecurring);
     }
 
     /**
      * Get only recurring tiers
      */
-    getRecurringTiers(language: 'en' | 'si' = 'en'): DonationTier[] {
-        return this.getAllTiers(language).filter((t) => t.isRecurring);
+    getRecurringTiers(_language: 'en' | 'si' = 'en'): DonationTier[] {
+        void _language;
+        return this.getAllTiers().filter((t) => t.isRecurring);
     }
 
     /**

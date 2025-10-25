@@ -45,7 +45,7 @@ export class AmqpClientWrapper extends EventEmitter {
      */
     async connect(
         brokerUrl: string,
-        socketOptions?: Record<string, any>
+        socketOptions?: Record<string, unknown>
     ): Promise<void> {
         if (this.status === AmqpConnectionStatus.CONNECTED) {
             this.emit('debug', 'Already connected to AMQP broker');
@@ -79,8 +79,8 @@ export class AmqpClientWrapper extends EventEmitter {
             }
 
             // Channel error handling (if Channel supports EventEmitter)
-            if (this.channel && typeof (this.channel as any).on === 'function') {
-                (this.channel as any).on('error', (error: Error | undefined) => {
+            if (this.channel && typeof (this.channel as unknown as { on?: unknown }).on === 'function') {
+                (this.channel as unknown as { on: (event: string, handler: (error: Error | undefined) => void) => void }).on('error', (error: Error | undefined) => {
                     this.emit('error', error);
                 });
             }
@@ -105,7 +105,7 @@ export class AmqpClientWrapper extends EventEmitter {
     async declareExchange(
         exchange: string,
         type: 'direct' | 'topic' | 'fanout' | 'headers',
-        options?: Record<string, any>
+        options?: Record<string, unknown>
     ): Promise<void> {
         if (!this.channel) {
             throw new Error('Not connected to AMQP broker');
@@ -132,7 +132,7 @@ export class AmqpClientWrapper extends EventEmitter {
      */
     async declareQueue(
         queue: string,
-        options?: Record<string, any>
+        options?: Record<string, unknown>
     ): Promise<{ queue: string; messageCount: number; consumerCount: number }> {
         if (!this.channel) {
             throw new Error('Not connected to AMQP broker');
@@ -188,7 +188,7 @@ export class AmqpClientWrapper extends EventEmitter {
         exchange: string,
         routingKey: string,
         message: Buffer | string,
-        options?: Record<string, any>
+        options?: Record<string, unknown>
     ): Promise<boolean> {
         if (!this.channel) {
             throw new Error('Not connected to AMQP broker');
@@ -224,7 +224,7 @@ export class AmqpClientWrapper extends EventEmitter {
     async consume(
         queue: string,
         handler: AmqpMessageHandler,
-        options?: Record<string, any>
+        options?: Record<string, unknown>
     ): Promise<{ consumerTag: string }> {
         if (!this.channel) {
             throw new Error('Not connected to AMQP broker');

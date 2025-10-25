@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { authMiddleware } from '@/lib/auth';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-07-30.basil',
+    apiVersion: '2025-08-27.basil',
 });
 
 export async function POST(request: NextRequest) {
@@ -49,10 +49,7 @@ export async function POST(request: NextRequest) {
                 id: stripeSubscription.items.data[0].id,
                 price_data: {
                     currency: newPlan.currency.toLowerCase(),
-                    product_data: {
-                        name: newPlan.name,
-                        description: newPlan.description || `${newPlan.maxTriggers} triggers per ${newPlan.interval}`,
-                    },
+                    product: newPlan.name,
                     unit_amount: Math.round(newPlan.price * 100),
                     recurring: {
                         interval: newPlan.interval as 'month' | 'year',

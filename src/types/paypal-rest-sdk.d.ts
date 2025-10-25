@@ -60,14 +60,14 @@ declare module 'paypal-rest-sdk' {
 
     export namespace payment {
         function create(
-            details: any,
-            callback: (error: any, payment: Payment) => void
+            details: PaymentDetails,
+            callback: (error: Error | null, payment: Payment) => void
         ): void;
 
         function execute(
             paymentId: string,
             executionDetails: { payer_id: string },
-            callback: (error: any, payment: Payment) => void
+            callback: (error: Error | null, payment: Payment) => void
         ): void;
     }
 }

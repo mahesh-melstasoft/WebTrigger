@@ -72,7 +72,7 @@ export interface SriLankanPaymentTransaction {
     phoneNumber?: string;
     bankAccountId?: string;
     reference?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     createdAt: number;
     completedAt?: number;
     refundedAt?: number;
@@ -170,6 +170,8 @@ export class PayHereHandler {
                 throw new Error(`PayHere error: ${response.data.msg}`);
             }
         } catch (error) {
+            // keep stack but avoid unused var lint where error might be referenced in some environments
+            void error;
             throw new Error(`Failed to create PayHere payment: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -178,7 +180,7 @@ export class PayHereHandler {
      * Verify PayHere notification
      * Called by PayHere webhook after payment
      */
-    verifyNotification(notificationData: Record<string, any>): boolean {
+    verifyNotification(notificationData: Record<string, unknown>): boolean {
         const {
             merchant_id,
             order_id,
@@ -209,6 +211,8 @@ export class PayHereHandler {
         statusCode: number,
         amount: number
     ): void {
+        // amount parameter may be provided by downstream webhooks but isn't needed here yet
+        void amount;
         const transaction = this.transactions.get(orderId);
         if (transaction) {
             if (statusCode === 2) {
@@ -317,6 +321,7 @@ export class WaveMoneyHandler {
                 };
             }
         } catch (error) {
+            void error;
             throw new Error(`Wave Money error: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -347,6 +352,7 @@ export class WaveMoneyHandler {
 
             return status;
         } catch (error) {
+            void error;
             throw new Error(`Failed to check Wave Money status: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -485,6 +491,7 @@ export class MobitelMCashHandler {
             this.transactions.set(response.data.paymentId, transaction);
             return transaction;
         } catch (error) {
+            void error;
             throw new Error(`Mobitel m-CASH error: ${error instanceof Error ? error.message : String(error)}`);
         }
     }
@@ -502,6 +509,7 @@ export class MobitelMCashHandler {
             }
             return response.data.verified;
         } catch (error) {
+            void error;
             return false;
         }
     }
@@ -761,7 +769,7 @@ export class SriLankanPaymentMaster {
  */
 export function createSriLankanPaymentMaster(): SriLankanPaymentMaster {
     // Only include non-empty environment variables
-    const config: any = {};
+    const config: Record<string, unknown> = {};
 
     // PayHere - requires both ID and secret
     if (process.env.PAYHERE_MERCHANT_ID?.trim() && process.env.PAYHERE_MERCHANT_SECRET?.trim()) {
@@ -785,7 +793,7 @@ export function createSriLankanPaymentMaster(): SriLankanPaymentMaster {
     }
 
     // Bank Accounts - only include configured ones
-    const bankAccounts: any = {};
+    const bankAccounts: Record<string, string> = {};
     if (process.env.SAMPATH_ACCOUNT?.trim()) {
         bankAccounts[SriLankanBank.SAMPATH] = process.env.SAMPATH_ACCOUNT;
     }

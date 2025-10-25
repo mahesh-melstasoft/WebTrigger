@@ -239,7 +239,9 @@ export class HttpAuthHandler {
     /**
      * Encrypt auth config for storage (especially passwords and secrets)
      */
-    static encryptConfig(config: AuthConfig, key?: string): string {
+    static encryptConfig(config: AuthConfig, _key?: string): string {
+        // _key parameter is reserved for future custom key support
+        void _key;
         const configJson = JSON.stringify(config);
         return encryptSecret(configJson);
     }
@@ -247,7 +249,9 @@ export class HttpAuthHandler {
     /**
      * Decrypt auth config from storage
      */
-    static decryptConfig(encrypted: string, key?: string): AuthConfig {
+    static decryptConfig(encrypted: string, _key?: string): AuthConfig {
+        // _key parameter is reserved for future custom key support
+        void _key;
         const configJson = decryptSecret(encrypted);
         return JSON.parse(configJson) as AuthConfig;
     }

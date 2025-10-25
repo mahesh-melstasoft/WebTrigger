@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Sitemap: /sitemap.xml
+
+# Crawl-delay can be configured for slow crawlers if needed.

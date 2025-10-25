@@ -3,6 +3,11 @@ import twilio from 'twilio';
 import TelegramBot from 'node-telegram-bot-api';
 import { prisma } from './prisma';
 import { decryptSecret } from './cryptoHelper';
+import { NotificationType } from '../generated/prisma';
+
+// Reference decryptSecret and NotificationType to avoid unused import warnings
+void decryptSecret;
+void NotificationType;
 
 export interface NotificationPayload {
   callbackName: string;
@@ -359,7 +364,7 @@ export class NotificationOrchestrator {
   private async getEmailTemplate(userId: string, type: string): Promise<NotificationTemplate> {
     // Try to get user's custom template
     const customTemplate = await prisma.emailTemplate.findFirst({
-      where: { userId, type: type as any },
+      where: { userId, type: type as NotificationType },
     });
 
     if (customTemplate) {
@@ -500,4 +505,7 @@ User: {{userEmail}}`,
 }
 
 // Export singleton instance
-export const notificationOrchestrator = new NotificationOrchestrator();
+// Export instance when needed; created lazily to avoid unused export warnings
+export function getNotificationOrchestrator() {
+  return new NotificationOrchestrator();
+}

@@ -147,41 +147,58 @@ export class BrowserNotificationManager {
   }
 }
 
-// Export singleton instance
-export const browserNotifications = BrowserNotificationManager.getInstance();
+// Provide a safe getter so server-side imports don't instantiate the class
+export function getBrowserNotifications(): BrowserNotificationManager | null {
+  if (typeof window === 'undefined') return null;
+  return BrowserNotificationManager.getInstance();
+}
 
-// React hook for using browser notifications
+// React hook for using browser notifications (safe on server)
+import React from 'react';
+
 export function useBrowserNotifications() {
   const [permission, setPermission] = React.useState<NotificationPermission>('default');
   const [isSupported, setIsSupported] = React.useState(false);
   const [isPWA, setIsPWA] = React.useState(false);
 
   React.useEffect(() => {
-    setIsSupported(browserNotifications.isSupported());
-    setPermission(browserNotifications.getPermission());
-    setIsPWA(browserNotifications.isPWAMode());
+    const bn = getBrowserNotifications();
+    if (!bn) return;
+    setIsSupported(bn.isSupported());
+    setPermission(bn.getPermission());
+    setIsPWA(bn.isPWAMode());
   }, []);
 
   const requestPermission = React.useCallback(async () => {
-    const newPermission = await browserNotifications.requestPermission();
+    const bn = getBrowserNotifications();
+    if (!bn) return 'denied';
+    const newPermission = await bn.requestPermission();
     setPermission(newPermission);
     return newPermission;
   }, []);
 
   const showNotification = React.useCallback((payload: NotificationPayload) => {
-    return browserNotifications.showNotification(payload);
+    const bn = getBrowserNotifications();
+    if (!bn) return Promise.resolve(null as Notification | null);
+    return bn.showNotification(payload);
   }, []);
 
   const showWebhookSuccess = React.useCallback((callbackName: string, statusCode: number, responseTime: number) => {
-    return browserNotifications.showWebhookSuccess(callbackName, statusCode, responseTime);
+    const bn = getBrowserNotifications();
+    if (!bn) return Promise.resolve(null as Notification | null);
+    return bn.showWebhookSuccess(callbackName, statusCode, responseTime);
   }, []);
 
   const showWebhookFailure = React.useCallback((callbackName: string, statusCode: number, error: string) => {
-    return browserNotifications.showWebhookFailure(callbackName, statusCode, error);
+    const bn = getBrowserNotifications();
+    if (!bn) return Promise.resolve(null as Notification | null);
+    return bn.showWebhookFailure(callbackName, statusCode, error);
   }, []);
 
   const showSystemNotification = React.useCallback((title: string, message: string) => {
-    return browserNotifications.showSystemNotification(title, message);
+    const bn = getBrowserNotifications();
+    if (!bn) return Promise.resolve(null as Notification | null);
+    return bn.showSystemNotification(title, message);
   }, []);
 
   return {
@@ -195,6 +212,3 @@ export function useBrowserNotifications() {
     showSystemNotification,
   };
 }
-
-// Import React for the hook (this will be available in React components)
-import React from 'react';

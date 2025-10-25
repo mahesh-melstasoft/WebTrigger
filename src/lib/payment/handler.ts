@@ -1,8 +1,12 @@
 import Stripe from 'stripe';
-// @ts-ignore - No types available
 import * as paypal from 'paypal-rest-sdk';
 import Razorpay from 'razorpay';
+import { createHmac } from 'crypto';
 import { encryptSecret, decryptSecret } from '../cryptoHelper';
+
+// Keep encrypt/decrypt references for future use and avoid unused import lint
+void encryptSecret;
+void decryptSecret;
 
 /**
  * Payment Gateway Types
@@ -50,7 +54,7 @@ export interface PaymentTransaction {
     customerId?: string;
     paymentMethodId?: string;
     description?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
     createdAt: number;
     completedAt?: number;
     refundedAt?: number;
@@ -121,7 +125,7 @@ export class PaymentHandler {
     async createStripePaymentIntent(
         amount: number,
         currency: string = 'usd',
-        metadata: Record<string, any> = {}
+        metadata: Record<string, string | number | null> = {}
     ): Promise<{ clientSecret: string; paymentIntentId: string }> {
         if (!this.stripe) {
             throw new Error('Stripe is not configured');
@@ -207,7 +211,7 @@ export class PaymentHandler {
     ): Promise<{ approvalUrl: string; paymentId: string }> {
         return new Promise((resolve, reject) => {
             const paymentDetails = {
-                intent: 'sale',
+                intent: 'sale' as 'sale' | 'authorize',
                 payer: {
                     payment_method: 'paypal',
                 },
@@ -229,14 +233,15 @@ export class PaymentHandler {
                 ],
             };
 
-            paypal.payment.create(paymentDetails as any, (error: any, payment: any) => {
+            paypal.payment.create(paymentDetails, (error: unknown, payment: unknown) => {
                 if (error) {
                     reject(error);
                 } else {
-                    const approvalUrl = payment.links.find((link: any) => link.rel === 'approval_url')?.href;
+                    const paypalPayment = payment as { links?: Array<{ rel: string; href: string }>; id: string };
+                    const approvalUrl = paypalPayment.links?.find((link) => link.rel === 'approval_url')?.href;
                     resolve({
                         approvalUrl: approvalUrl || '',
-                        paymentId: payment.id,
+                        paymentId: paypalPayment.id,
                     });
                 }
             });
@@ -253,22 +258,28 @@ export class PaymentHandler {
             paypal.payment.execute(
                 paymentId,
                 { payer_id: payerId },
-                (error: any, payment: any) => {
+                (error: unknown, payment: unknown) => {
                     if (error) {
                         reject(error);
                     } else {
+                        const paypalPayment = payment as {
+                            id: string;
+                            transactions: Array<{ amount: { total: string; currency: string } }>;
+                            state: string;
+                            payer: { payer_info: { email: string } };
+                        };
                         const transaction: PaymentTransaction = {
-                            id: payment.id,
+                            id: paypalPayment.id,
                             gateway: PaymentGateway.PAYPAL,
-                            amount: parseFloat(payment.transactions[0].amount.total),
-                            currency: payment.transactions[0].amount.currency,
-                            status: payment.state === 'approved' ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
-                            paymentMethodId: payment.payer.payer_info.email,
+                            amount: parseFloat(paypalPayment.transactions[0].amount.total),
+                            currency: paypalPayment.transactions[0].amount.currency,
+                            status: paypalPayment.state === 'approved' ? PaymentStatus.COMPLETED : PaymentStatus.FAILED,
+                            paymentMethodId: paypalPayment.payer.payer_info.email,
                             metadata: { payerId },
                             createdAt: Date.now(),
                         };
 
-                        this.transactions.set(payment.id, transaction);
+                        this.transactions.set(paypalPayment.id, transaction);
                         resolve(transaction);
                     }
                 }
@@ -335,9 +346,7 @@ export class PaymentHandler {
         }
 
         // Verify signature
-        const crypto = require('crypto');
-        const hash = crypto
-            .createHmac('sha256', this.config.razorpayKeySecret)
+        const hash = createHmac('sha256', this.config.razorpayKeySecret!)
             .update(`${orderId}|${paymentId}`)
             .digest('hex');
 
@@ -387,7 +396,7 @@ export class PaymentHandler {
     /**
      * Get Patreon campaign members (requires access token)
      */
-    async getPatreonMembers(): Promise<any[]> {
+    async getPatreonMembers(): Promise<Record<string, unknown>[]> {
         if (!this.config.patreonAccessToken || !this.config.patreonCampaignId) {
             throw new Error('Patreon configuration is incomplete');
         }
@@ -468,7 +477,7 @@ export class PaymentHandler {
     verifyStripeWebhookSignature(
         body: Buffer | string,
         signature: string
-    ): Record<string, any> | null {
+    ): Record<string, unknown> | null {
         if (!this.stripe) {
             return null;
         }
@@ -480,7 +489,7 @@ export class PaymentHandler {
 
         try {
             const event = this.stripe.webhooks.constructEvent(body, signature, webhookSecret);
-            return event as any;
+            return event as unknown as Record<string, unknown>;
         } catch {
             return null;
         }

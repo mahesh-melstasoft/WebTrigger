@@ -63,9 +63,9 @@ export class HttpTemplateEngine {
      * Resolve variables in JSON object (headers, body, query params)
      */
     async resolveJsonTemplate(
-        json: any,
+        json: unknown,
         context: TemplateContext
-    ): Promise<any> {
+    ): Promise<unknown> {
         if (json === null || json === undefined) {
             return json;
         }
@@ -81,7 +81,7 @@ export class HttpTemplateEngine {
         }
 
         if (typeof json === 'object') {
-            const resolved: any = {};
+            const resolved: Record<string, unknown> = {};
             for (const [key, value] of Object.entries(json)) {
                 resolved[key] = await this.resolveJsonTemplate(value, context);
             }
@@ -96,7 +96,7 @@ export class HttpTemplateEngine {
      */
     static buildContext(
         callbackId: string,
-        customData: Record<string, any> = {}
+        customData: Record<string, unknown> = {}
     ): TemplateContext {
         return {
             callback_id: callbackId,
@@ -258,7 +258,7 @@ export class HttpTemplateEngine {
 /**
  * Helper function: format JSON to string for body
  */
-export function formatJsonBody(body: any): string {
+export function formatJsonBody(body: unknown): string {
     if (body === null || body === undefined) {
         return '';
     }
@@ -289,7 +289,7 @@ export function parseQueryString(
 /**
  * Helper function: build query string from object
  */
-export function buildQueryString(params: Record<string, any>): string {
+export function buildQueryString(params: Record<string, unknown>): string {
     const query = new URLSearchParams();
 
     for (const [key, value] of Object.entries(params)) {

@@ -4,9 +4,9 @@
  * GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH
  */
 
-import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import { HttpAuthHandler, AuthConfig } from './httpAuth';
-import { HttpTemplateEngine } from './httpTemplateEngine';
+// HttpTemplateEngine is available for future templating; currently not required here
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE' | 'HEAD' | 'OPTIONS' | 'PATCH';
 
@@ -116,7 +116,7 @@ export class HttpExecutor {
 
             // Build Axios config
             const axiosConfig: AxiosRequestConfig = {
-                method: config.method.toLowerCase() as any,
+                method: config.method.toLowerCase() as AxiosRequestConfig['method'],
                 url,
                 headers,
                 timeout: config.timeout || 30000,
@@ -170,7 +170,7 @@ export class HttpExecutor {
      */
     static async executeWithTemplate(
         config: HttpRequestConfig,
-        templateContext: Record<string, any> = {}
+        templateContext: Record<string, unknown> = {}
     ): Promise<HttpExecutionResult> {
         // Apply template substitution to headers and body
         const processedHeaders = await this.processTemplateObject(
@@ -350,10 +350,10 @@ export class HttpExecutor {
      * Process template substitution on object
      */
     private static async processTemplateObject(
-        obj: Record<string, any>,
-        context: Record<string, any>
-    ): Promise<Record<string, any>> {
-        const result: Record<string, any> = {};
+        obj: Record<string, unknown>,
+        context: Record<string, unknown>
+    ): Promise<Record<string, unknown>> {
+        const result: Record<string, unknown> = {};
 
         for (const [key, value] of Object.entries(obj)) {
             if (typeof value === 'string') {
@@ -370,9 +370,9 @@ export class HttpExecutor {
      * Process template substitution
      */
     private static async processTemplate(
-        value: any,
-        context: Record<string, any>
-    ): Promise<any> {
+        value: unknown,
+        context: Record<string, unknown>
+    ): Promise<unknown> {
         if (typeof value !== 'string') {
             return value;
         }

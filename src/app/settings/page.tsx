@@ -35,6 +35,7 @@ import {
     Database,
 } from 'lucide-react';
 import Image from 'next/image';
+import { ApiKey } from '@/generated/prisma';
 
 interface UserSettings {
     id: string;
@@ -469,6 +470,45 @@ export default function SettingsPage() {
             setError('An error occurred while saving notification settings');
         } finally {
             setSavingNotifications(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!settings) return;
+
+        setSaving(true);
+        setError('');
+        setSuccess('');
+
+        const token = localStorage.getItem('token');
+        try {
+            const response = await fetch('/api/settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    appName: settings.appName,
+                    appDescription: settings.appDescription,
+                    colorPalette: settings.colorPalette,
+                    displayName: settings.displayName,
+                    slackWebhookUrl: settings.slackWebhookUrl,
+                }),
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setSettings(data);
+                setSuccess('Settings saved successfully!');
+            } else {
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to save settings');
+            }
+        } catch {
+            setError('An error occurred while saving settings');
+        } finally {
+            setSaving(false);
         }
     };
 

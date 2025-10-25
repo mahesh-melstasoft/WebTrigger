@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authMiddleware } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 
 export async function GET(request: NextRequest) {
     try {
@@ -9,7 +10,6 @@ export async function GET(request: NextRequest) {
         const url = new URL(request.url);
         const callbackId = url.searchParams.get('callbackId');
 
-        const { prisma } = await import('@/lib/prisma');
         const where = callbackId ? { callbackId, userId: auth.user!.id } : { userId: auth.user!.id };
 
         const actions = await prisma.action.findMany({
@@ -38,8 +38,6 @@ export async function POST(request: NextRequest) {
         // Validate action type
         const validTypes = ['HTTP_POST', 'SLACK', 'EMAIL', 'STORE'];
         if (!validTypes.includes(type)) return NextResponse.json({ error: 'Invalid action type' }, { status: 400 });
-
-        const { prisma } = await import('@/lib/prisma');
 
         // Verify callback ownership
         const callback = await prisma.callback.findFirst({
@@ -85,8 +83,6 @@ export async function PUT(request: NextRequest) {
 
         if (!id) return NextResponse.json({ error: 'Missing action id' }, { status: 400 });
 
-        const { prisma } = await import('@/lib/prisma');
-
         // Verify action ownership
         const existingAction = await prisma.action.findFirst({
             where: { id, userId: auth.user!.id },
@@ -114,8 +110,6 @@ export async function DELETE(request: NextRequest) {
         const id = url.searchParams.get('id');
 
         if (!id) return NextResponse.json({ error: 'Missing action id' }, { status: 400 });
-
-        const { prisma } = await import('@/lib/prisma');
 
         // Verify action ownership and delete
         const deleted = await prisma.action.deleteMany({

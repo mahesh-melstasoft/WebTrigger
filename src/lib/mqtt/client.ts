@@ -226,7 +226,7 @@ export class MqttClientWrapper extends EventEmitter {
         }
 
         return new Promise((resolve, reject) => {
-            this.client!.subscribe(topic, (error: Error | undefined) => {
+            this.client!.subscribe(topic, (error: Error | null) => {
                 if (error) reject(error);
                 else {
                     if (Array.isArray(topic)) {

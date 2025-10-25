@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
                     write: (data: string) => {
                         try {
                             controller.enqueue(encoder.encode(data));
-                        } catch (_error) {
+                        } catch {
                             // Client disconnected, remove from clients map
                             clients.delete(userId);
                         }
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
                     close: () => {
                         try {
                             controller.close();
-                        } catch (_error) {
+                        } catch {
                             // Already closed
                         }
                         clients.delete(userId);
@@ -87,7 +87,7 @@ export function sendRealtimeNotification(userId: string, notification: {
 
         try {
             client.write(message);
-        } catch (_error) {
+        } catch {
             // Client disconnected, remove from clients map
             clients.delete(userId);
         }
@@ -109,7 +109,7 @@ export function broadcastSystemNotification(notification: {
     for (const [userId, client] of clients.entries()) {
         try {
             client.write(message);
-        } catch (_error) {
+        } catch {
             // Client disconnected, remove from clients map
             clients.delete(userId);
         }

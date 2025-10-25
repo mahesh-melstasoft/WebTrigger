@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useBrowserNotifications } from '@/lib/browserNotifications';
+// useBrowserNotifications is intentionally not used at module load to avoid SSR window access
+// import { useBrowserNotifications } from '@/lib/browserNotifications';
 import { usePushNotifications } from '@/lib/pushNotifications';
 import {
     Smartphone,
@@ -33,10 +33,11 @@ export default function PWAPage() {
     const [isInstalled, setIsInstalled] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-    const _router = useRouter();
+    // router is not required here but can be enabled later if navigation is needed
+    // const _router = useRouter();
 
-    // Browser notifications
-    const _browserNotifications = useBrowserNotifications();
+    // Browser notifications (getter used elsewhere) - keep hook for side-effects when needed
+    // const _browserNotifications = useBrowserNotifications();
 
     // Push notifications
     const pushNotifications = usePushNotifications();
