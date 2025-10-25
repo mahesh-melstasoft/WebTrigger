@@ -81,23 +81,39 @@ model SubscriptionPlan {
 }
 
 model Callback {
-  id              String   @id @default(cuid())
+  id              String  @id @default(cuid())
   name            String
   callbackUrl     String
-  activeStatus    Boolean  @default(true)
-  triggerToken    String?  @unique @default(uuid())
-  customPath      String?  @unique // Custom URL path for triggering
+  activeStatus    Boolean @default(true)
+  triggerToken    String? @unique @default(uuid())
+  customPath      String? @unique // Custom URL path for triggering
   userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  timeoutDuration Int      @default(30000) // 30 seconds default
-  cachePeriod     Int      @default(0) // Cache period in seconds (0 = no cache)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeoutDuration Int     @default(30000) // 30 seconds default
+  cachePeriod     Int     @default(0) // Cache period in seconds (0 = no cache)
+
+  // HTTP Method Configuration
+  httpMethod      String  @default("GET") // GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH
+  httpHeaders     Json? // Headers template with variables: {"X-Custom": "value", "Authorization": "{secret:auth_token}"}
+  httpBody        Json? // Request body template with variables
+  queryParams     Json? // Query parameters template
+  authType        String? // NONE, BASIC, BEARER, API_KEY, OAUTH2
+  authConfig      Json? // Auth-specific config: {username, password, token, apiKeyName, etc}
+  requestDetails  Json? // Last execution details: {method, url, headersCount, bodySize, duration, timestamp}
+  responseDetails Json? // Last response details: {status, headers, bodySample, timestamp}
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   logs          Log[]
   rateLimitLogs RateLimitLog[]
   actions       Action[]
   executions    ActionExecution[]
+  httpTemplates CallbackHttpTemplate[]
+  mqtt          CallbackMqtt?
+  mqttLogs      MqttPublishLog[]
+  amqp          CallbackAmqp?
+  amqpLogs      AmqpPublishLog[]
 }
 
 model Log {
@@ -110,6 +126,23 @@ model Log {
   responseTime Int? // Response time in milliseconds
   statusCode   Int? // HTTP status code
   success      Boolean  @default(true)
+}
+
+model CallbackHttpTemplate {
+  id         String   @id @default(cuid())
+  callbackId String
+  callback   Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+
+  // Variable values for template substitution
+  // Example: {"user_id": "123", "timestamp": "2025-10-25T11:00:00Z"}
+  variables Json
+
+  // Optional: name for this template set
+  templateName String?
+  description  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model RateLimit {
@@ -188,6 +221,105 @@ model ActionExecution {
   updatedAt  DateTime              @updatedAt
 }
 
+model CallbackMqtt {
+  id         String   @id @default(cuid())
+  callbackId String   @unique
+  callback   Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+
+  // MQTT Configuration
+  broker String // mqtt://broker.example.com:1883 or mqtts://...
+  topic  String // my/topic/path with optional variables
+  qos    Int     @default(1) // 0, 1, or 2
+  retain Boolean @default(false)
+
+  // Authentication
+  username String?
+  password String? // Encrypted
+  clientId String?
+
+  // Message Configuration
+  payloadFormat   String @default("JSON") // JSON, TEXT, XML
+  payloadTemplate Json? // Message template with variables
+
+  // Retry/Reliability
+  maxRetries   Int @default(3)
+  retryDelayMs Int @default(1000)
+
+  // Status
+  enabled        Boolean   @default(true)
+  lastTestAt     DateTime?
+  lastTestStatus Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MqttPublishLog {
+  id         String   @id @default(cuid())
+  callbackId String
+  callback   Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+
+  topic    String
+  payload  String // First 5KB of payload
+  qos      Int
+  success  Boolean
+  error    String?
+  duration Int // ms
+
+  createdAt DateTime @default(now())
+}
+
+model CallbackAmqp {
+  id         String   @id @default(cuid())
+  callbackId String   @unique
+  callback   Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+
+  // AMQP Configuration
+  brokerUrl    String // amqp://... connection string
+  exchangeName String
+  routingKey   String // with optional variables
+  exchangeType String  @default("topic") // direct, topic, fanout, headers
+  durable      Boolean @default(true)
+  autoDelete   Boolean @default(false)
+
+  // Authentication
+  username String?
+  password String? // Encrypted
+
+  // Message Configuration
+  messageFormat   String @default("JSON") // JSON, XML, TEXT
+  messageTemplate Json? // Message template with variables
+  priority        Int    @default(5) // 0-10
+
+  // Delivery Settings
+  persistent    Boolean @default(true)
+  contentType   String  @default("application/json")
+  messageExpiry Int? // milliseconds
+
+  // Status
+  enabled        Boolean   @default(true)
+  lastTestAt     DateTime?
+  lastTestStatus Boolean?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AmqpPublishLog {
+  id         String   @id @default(cuid())
+  callbackId String
+  callback   Callback @relation(fields: [callbackId], references: [id], onDelete: Cascade)
+
+  exchange   String
+  routingKey String
+  message    String // First 5KB of message
+  success    Boolean
+  error      String?
+  duration   Int // ms
+
+  createdAt DateTime @default(now())
+}
+
 model ServiceCredential {
   id        String          @id @default(cuid())
   userId    String
@@ -210,6 +342,8 @@ enum ActionType {
   STORE
   QUEUE
   DISCORD
+  MQTT_PUBLISH
+  AMQP_PUBLISH
 }
 
 enum ActionExecutionStatus {
@@ -225,4 +359,6 @@ enum ServiceProvider {
   SLACK
   DISCORD
   GENERIC
+  MQTT_BROKER
+  AMQP_BROKER
 }
