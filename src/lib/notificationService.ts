@@ -303,15 +303,24 @@ export class NotificationOrchestrator {
   private smsService = new SMSNotificationService();
 
   async sendNotifications(userId: string, payload: NotificationPayload): Promise<void> {
-    // Get user's notification settings
-    const settings = await prisma.notificationSettings.findUnique({
-      where: { userId },
-    });
+    // Get user's notification settings and subscription info
+    const [settings, user] = await Promise.all([
+      prisma.notificationSettings.findUnique({
+        where: { userId },
+      }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      }),
+    ]);
 
-    if (!settings) {
-      // No settings configured, skip notifications
+    if (!settings || !user) {
+      // No settings configured or user not found, skip notifications
       return;
     }
+
+    // Check if user has paid subscription (not FREE)
+    const hasPaidSubscription = user.role !== 'FREE';
 
     // Determine which event type this is
     const isSuccess = payload.success;
@@ -328,8 +337,8 @@ export class NotificationOrchestrator {
       await this.emailService.sendNotification(recipients, template, payload);
     }
 
-    // Send WhatsApp Notifications
-    if (settings.whatsappEnabled && settings.whatsappNumbers.length > 0 &&
+    // Send WhatsApp Notifications (PAID SUBSCRIPTION REQUIRED)
+    if (hasPaidSubscription && settings.whatsappEnabled && settings.whatsappNumbers.length > 0 &&
         ((isSuccess && settings.whatsappOnSuccess) || (!isSuccess && settings.whatsappOnFailure))) {
       await this.whatsappService.sendNotification(settings.whatsappNumbers, payload);
     }
@@ -340,8 +349,8 @@ export class NotificationOrchestrator {
       await this.telegramService.sendNotification(settings.telegramChatIds, payload);
     }
 
-    // Send SMS Notifications
-    if (settings.smsEnabled && settings.smsNumbers.length > 0 &&
+    // Send SMS Notifications (PAID SUBSCRIPTION REQUIRED)
+    if (hasPaidSubscription && settings.smsEnabled && settings.smsNumbers.length > 0 &&
         ((isSuccess && settings.smsOnSuccess) || (!isSuccess && settings.smsOnFailure))) {
       await this.smsService.sendNotification(settings.smsNumbers, payload);
     }

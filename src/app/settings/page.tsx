@@ -57,13 +57,32 @@ interface ServiceCredential {
     createdAt: string;
 }
 
-interface ApiKey {
+interface NotificationSettings {
     id: string;
-    name: string;
-    permissions: string[];
-    expiresAt?: string;
+    userId: string;
+    emailEnabled: boolean;
+    emailRecipients: string[];
+    emailOnSuccess: boolean;
+    emailOnFailure: boolean;
+    whatsappEnabled: boolean;
+    whatsappNumbers: string[];
+    whatsappOnSuccess: boolean;
+    whatsappOnFailure: boolean;
+    telegramEnabled: boolean;
+    telegramChatIds: string[];
+    telegramOnSuccess: boolean;
+    telegramOnFailure: boolean;
+    smsEnabled: boolean;
+    smsNumbers: string[];
+    smsOnSuccess: boolean;
+    smsOnFailure: boolean;
+    hasPaidSubscription: boolean;
+    subscriptionRequired: {
+        whatsapp: boolean;
+        sms: boolean;
+    };
     createdAt: string;
-    lastUsedAt?: string;
+    updatedAt: string;
 }
 
 const ACCOUNT_TYPES = [
@@ -72,7 +91,7 @@ const ACCOUNT_TYPES = [
         name: 'Free',
         price: '$0/month',
         limits: '5 triggers',
-        features: ['Basic webhook triggers', 'Standard logging', 'Community support'],
+        features: ['Basic webhook triggers', 'Email notifications (1 recipient)', 'Community support'],
         color: 'bg-gray-100 text-gray-800',
         icon: User
     },
@@ -81,7 +100,7 @@ const ACCOUNT_TYPES = [
         name: 'Starter',
         price: '$9/month',
         limits: '50 triggers',
-        features: ['Advanced webhook triggers', 'Enhanced logging', 'Email support', 'Custom timeouts'],
+        features: ['Advanced webhook triggers', 'Email notifications (3 recipients)', 'WhatsApp & SMS notifications', 'Enhanced logging', 'Email support', 'Custom timeouts'],
         color: 'bg-blue-100 text-blue-800',
         icon: Zap,
         planId: 'cmev2jyjz0000hoe81bz1mm6u' // From seeded database
@@ -91,7 +110,7 @@ const ACCOUNT_TYPES = [
         name: 'Pro',
         price: '$29/month',
         limits: '500 triggers',
-        features: ['Unlimited webhook triggers', 'Advanced analytics', 'Priority support', 'Custom integrations'],
+        features: ['Unlimited webhook triggers', 'Email notifications (10 recipients)', 'WhatsApp & SMS notifications', 'Advanced analytics', 'Priority support', 'Custom integrations'],
         color: 'bg-purple-100 text-purple-800',
         icon: Star,
         planId: 'cmev2jyoj0001hoe84vt6h8op' // From seeded database
@@ -101,7 +120,7 @@ const ACCOUNT_TYPES = [
         name: 'Admin',
         price: 'Custom',
         limits: 'Unlimited',
-        features: ['All Pro features', 'User management', 'Admin dashboard', 'Custom reports', 'White-label options'],
+        features: ['All Pro features', 'Unlimited notifications', 'User management', 'Admin dashboard', 'Custom reports', 'White-label options'],
         color: 'bg-gold-100 text-gold-800',
         icon: Crown,
         planId: 'cmev2jysg0002hoe8i59phiv9' // From seeded database
@@ -138,6 +157,9 @@ export default function SettingsPage() {
     const [newCredentialProvider, setNewCredentialProvider] = useState('SENDGRID');
     const [newCredentialSecret, setNewCredentialSecret] = useState('');
     const [creatingCredential, setCreatingCredential] = useState(false);
+    const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
+    const [loadingNotifications, setLoadingNotifications] = useState(false);
+    const [savingNotifications, setSavingNotifications] = useState(false);
     const router = useRouter();
 
     const fetchApiKeys = useCallback(async () => {
@@ -176,6 +198,27 @@ export default function SettingsPage() {
         }
     }, []);
 
+    const fetchNotificationSettings = useCallback(async () => {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+
+        setLoadingNotifications(true);
+        try {
+            const response = await fetch('/api/notifications', {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setNotificationSettings(data);
+            }
+        } catch {
+            console.error('Failed to fetch notification settings');
+        } finally {
+            setLoadingNotifications(false);
+        }
+    }, []);
+
     const fetchSettings = useCallback(async () => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -208,7 +251,8 @@ export default function SettingsPage() {
         fetchSettings();
         fetchApiKeys();
         fetchServiceCredentials();
-    }, [fetchSettings, fetchApiKeys, fetchServiceCredentials]);
+        fetchNotificationSettings();
+    }, [fetchSettings, fetchApiKeys, fetchServiceCredentials, fetchNotificationSettings]);
 
     const handleCreateApiKey = async () => {
         if (!newApiKeyName.trim()) return;
@@ -395,37 +439,36 @@ export default function SettingsPage() {
         }
     };
 
-    const handleSave = async () => {
-        if (!settings) return;
+    const handleSaveNotifications = async () => {
+        if (!notificationSettings) return;
 
-        setSaving(true);
+        setSavingNotifications(true);
         setError('');
         setSuccess('');
 
         const token = localStorage.getItem('token');
         try {
-            const response = await fetch('/api/settings', {
+            const response = await fetch('/api/notifications', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify(settings),
+                body: JSON.stringify(notificationSettings),
             });
 
             if (response.ok) {
-                setSuccess('Settings saved successfully!');
-                // Update the document title if app name changed
-                if (settings.appName && settings.appName !== 'WebTrigger') {
-                    document.title = `${settings.appName} - Settings`;
-                }
+                const data = await response.json();
+                setNotificationSettings(data);
+                setSuccess('Notification settings saved successfully!');
             } else {
-                setError('Failed to save settings');
+                const errorData = await response.json();
+                setError(errorData.error || 'Failed to save notification settings');
             }
         } catch {
-            setError('An error occurred while saving settings');
+            setError('An error occurred while saving notification settings');
         } finally {
-            setSaving(false);
+            setSavingNotifications(false);
         }
     };
 
@@ -663,10 +706,11 @@ export default function SettingsPage() {
                 )}
 
                 <Tabs defaultValue="app" className="space-y-6">
-                    <TabsList className="grid w-full grid-cols-8">
+                    <TabsList className="grid w-full grid-cols-9">
                         <TabsTrigger value="app">App Branding</TabsTrigger>
                         <TabsTrigger value="account">Account</TabsTrigger>
                         <TabsTrigger value="security">Security</TabsTrigger>
+                        <TabsTrigger value="notifications">Notifications</TabsTrigger>
                         <TabsTrigger value="api-keys">API Keys</TabsTrigger>
                         <TabsTrigger value="actions">Actions</TabsTrigger>
                         <TabsTrigger value="appearance">Appearance</TabsTrigger>
@@ -908,6 +952,396 @@ export default function SettingsPage() {
                                         </Alert>
                                     )}
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="notifications" className="space-y-6">
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Mail className="h-5 w-5" />
+                                    Webhook Notifications
+                                </CardTitle>
+                                <CardDescription>
+                                    Configure notifications for webhook success and failure events
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-6">
+                                {loadingNotifications ? (
+                                    <div className="flex items-center justify-center py-8">
+                                        <Settings className="h-6 w-6 animate-spin text-blue-500" />
+                                        <span className="ml-2">Loading notification settings...</span>
+                                    </div>
+                                ) : notificationSettings ? (
+                                    <>
+                                        {/* Email Notifications */}
+                                        <Card className="border-gray-200">
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Mail className="h-5 w-5 text-blue-500" />
+                                                        <CardTitle className="text-lg">Email Notifications</CardTitle>
+                                                    </div>
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                        Available on all plans
+                                                    </Badge>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="flex items-center space-x-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="emailEnabled"
+                                                        checked={notificationSettings.emailEnabled}
+                                                        onChange={(e) => setNotificationSettings({
+                                                            ...notificationSettings,
+                                                            emailEnabled: e.target.checked
+                                                        })}
+                                                        className="rounded"
+                                                    />
+                                                    <Label htmlFor="emailEnabled">Enable email notifications</Label>
+                                                </div>
+
+                                                {notificationSettings.emailEnabled && (
+                                                    <>
+                                                        <div className="space-y-2">
+                                                            <Label>Additional Recipients (comma-separated emails)</Label>
+                                                            <Input
+                                                                value={notificationSettings.emailRecipients.join(', ')}
+                                                                onChange={(e) => setNotificationSettings({
+                                                                    ...notificationSettings,
+                                                                    emailRecipients: e.target.value.split(',').map(email => email.trim()).filter(email => email)
+                                                                })}
+                                                                placeholder="user1@example.com, user2@example.com"
+                                                            />
+                                                            <p className="text-sm text-gray-600">
+                                                                Maximum {settings?.accountType === 'free' ? '1' : settings?.accountType === 'starter' ? '3' : settings?.accountType === 'pro' ? '10' : 'unlimited'} recipients
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label>Notify on:</Label>
+                                                            <div className="flex gap-4">
+                                                                <label className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={notificationSettings.emailOnSuccess}
+                                                                        onChange={(e) => setNotificationSettings({
+                                                                            ...notificationSettings,
+                                                                            emailOnSuccess: e.target.checked
+                                                                        })}
+                                                                        className="rounded"
+                                                                    />
+                                                                    Success
+                                                                </label>
+                                                                <label className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={notificationSettings.emailOnFailure}
+                                                                        onChange={(e) => setNotificationSettings({
+                                                                            ...notificationSettings,
+                                                                            emailOnFailure: e.target.checked
+                                                                        })}
+                                                                        className="rounded"
+                                                                    />
+                                                                    Failure
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* WhatsApp Notifications */}
+                                        <Card className={`border-gray-200 ${notificationSettings.subscriptionRequired.whatsapp ? 'opacity-75' : ''}`}>
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <MessageSquare className="h-5 w-5 text-green-500" />
+                                                        <CardTitle className="text-lg">WhatsApp Notifications</CardTitle>
+                                                    </div>
+                                                    {notificationSettings.subscriptionRequired.whatsapp ? (
+                                                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                                                            Paid plans only
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                            Available
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                {notificationSettings.subscriptionRequired.whatsapp ? (
+                                                    <Alert>
+                                                        <Crown className="h-4 w-4" />
+                                                        <AlertDescription>
+                                                            WhatsApp notifications require a paid subscription. Upgrade your plan to enable this feature.
+                                                        </AlertDescription>
+                                                    </Alert>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center space-x-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                id="whatsappEnabled"
+                                                                checked={notificationSettings.whatsappEnabled}
+                                                                onChange={(e) => setNotificationSettings({
+                                                                    ...notificationSettings,
+                                                                    whatsappEnabled: e.target.checked
+                                                                })}
+                                                                className="rounded"
+                                                            />
+                                                            <Label htmlFor="whatsappEnabled">Enable WhatsApp notifications</Label>
+                                                        </div>
+
+                                                        {notificationSettings.whatsappEnabled && (
+                                                            <>
+                                                                <div className="space-y-2">
+                                                                    <Label>Phone Numbers (with country code)</Label>
+                                                                    <Input
+                                                                        value={notificationSettings.whatsappNumbers.join(', ')}
+                                                                        onChange={(e) => setNotificationSettings({
+                                                                            ...notificationSettings,
+                                                                            whatsappNumbers: e.target.value.split(',').map(num => num.trim()).filter(num => num)
+                                                                        })}
+                                                                        placeholder="+1234567890, +0987654321"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="space-y-2">
+                                                                    <Label>Notify on:</Label>
+                                                                    <div className="flex gap-4">
+                                                                        <label className="flex items-center gap-2">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={notificationSettings.whatsappOnSuccess}
+                                                                                onChange={(e) => setNotificationSettings({
+                                                                                    ...notificationSettings,
+                                                                                    whatsappOnSuccess: e.target.checked
+                                                                                })}
+                                                                                className="rounded"
+                                                                            />
+                                                                            Success
+                                                                        </label>
+                                                                        <label className="flex items-center gap-2">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={notificationSettings.whatsappOnFailure}
+                                                                                onChange={(e) => setNotificationSettings({
+                                                                                    ...notificationSettings,
+                                                                                    whatsappOnFailure: e.target.checked
+                                                                                })}
+                                                                                className="rounded"
+                                                                            />
+                                                                            Failure
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* Telegram Notifications */}
+                                        <Card className="border-gray-200">
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <MessageSquare className="h-5 w-5 text-blue-500" />
+                                                        <CardTitle className="text-lg">Telegram Notifications</CardTitle>
+                                                    </div>
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                        Available on all plans
+                                                    </Badge>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="flex items-center space-x-2">
+                                                    <input
+                                                        type="checkbox"
+                                                        id="telegramEnabled"
+                                                        checked={notificationSettings.telegramEnabled}
+                                                        onChange={(e) => setNotificationSettings({
+                                                            ...notificationSettings,
+                                                            telegramEnabled: e.target.checked
+                                                        })}
+                                                        className="rounded"
+                                                    />
+                                                    <Label htmlFor="telegramEnabled">Enable Telegram notifications</Label>
+                                                </div>
+
+                                                {notificationSettings.telegramEnabled && (
+                                                    <>
+                                                        <div className="space-y-2">
+                                                            <Label>Chat IDs</Label>
+                                                            <Input
+                                                                value={notificationSettings.telegramChatIds.join(', ')}
+                                                                onChange={(e) => setNotificationSettings({
+                                                                    ...notificationSettings,
+                                                                    telegramChatIds: e.target.value.split(',').map(id => id.trim()).filter(id => id)
+                                                                })}
+                                                                placeholder="123456789, 987654321"
+                                                            />
+                                                        </div>
+
+                                                        <div className="space-y-2">
+                                                            <Label>Notify on:</Label>
+                                                            <div className="flex gap-4">
+                                                                <label className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={notificationSettings.telegramOnSuccess}
+                                                                        onChange={(e) => setNotificationSettings({
+                                                                            ...notificationSettings,
+                                                                            telegramOnSuccess: e.target.checked
+                                                                        })}
+                                                                        className="rounded"
+                                                                    />
+                                                                    Success
+                                                                </label>
+                                                                <label className="flex items-center gap-2">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={notificationSettings.telegramOnFailure}
+                                                                        onChange={(e) => setNotificationSettings({
+                                                                            ...notificationSettings,
+                                                                            telegramOnFailure: e.target.checked
+                                                                        })}
+                                                                        className="rounded"
+                                                                    />
+                                                                    Failure
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        {/* SMS Notifications */}
+                                        <Card className={`border-gray-200 ${notificationSettings.subscriptionRequired.sms ? 'opacity-75' : ''}`}>
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <MessageSquare className="h-5 w-5 text-purple-500" />
+                                                        <CardTitle className="text-lg">SMS Notifications</CardTitle>
+                                                    </div>
+                                                    {notificationSettings.subscriptionRequired.sms ? (
+                                                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">
+                                                            Paid plans only
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                            Available
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                {notificationSettings.subscriptionRequired.sms ? (
+                                                    <Alert>
+                                                        <Crown className="h-4 w-4" />
+                                                        <AlertDescription>
+                                                            SMS notifications require a paid subscription. Upgrade your plan to enable this feature.
+                                                        </AlertDescription>
+                                                    </Alert>
+                                                ) : (
+                                                    <>
+                                                        <div className="flex items-center space-x-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                id="smsEnabled"
+                                                                checked={notificationSettings.smsEnabled}
+                                                                onChange={(e) => setNotificationSettings({
+                                                                    ...notificationSettings,
+                                                                    smsEnabled: e.target.checked
+                                                                })}
+                                                                className="rounded"
+                                                            />
+                                                            <Label htmlFor="smsEnabled">Enable SMS notifications</Label>
+                                                        </div>
+
+                                                        {notificationSettings.smsEnabled && (
+                                                            <>
+                                                                <div className="space-y-2">
+                                                                    <Label>Phone Numbers (with country code)</Label>
+                                                                    <Input
+                                                                        value={notificationSettings.smsNumbers.join(', ')}
+                                                                        onChange={(e) => setNotificationSettings({
+                                                                            ...notificationSettings,
+                                                                            smsNumbers: e.target.value.split(',').map(num => num.trim()).filter(num => num)
+                                                                        })}
+                                                                        placeholder="+1234567890, +0987654321"
+                                                                    />
+                                                                </div>
+
+                                                                <div className="space-y-2">
+                                                                    <Label>Notify on:</Label>
+                                                                    <div className="flex gap-4">
+                                                                        <label className="flex items-center gap-2">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={notificationSettings.smsOnSuccess}
+                                                                                onChange={(e) => setNotificationSettings({
+                                                                                    ...notificationSettings,
+                                                                                    smsOnSuccess: e.target.checked
+                                                                                })}
+                                                                                className="rounded"
+                                                                            />
+                                                                            Success
+                                                                        </label>
+                                                                        <label className="flex items-center gap-2">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={notificationSettings.smsOnFailure}
+                                                                                onChange={(e) => setNotificationSettings({
+                                                                                    ...notificationSettings,
+                                                                                    smsOnFailure: e.target.checked
+                                                                                })}
+                                                                                className="rounded"
+                                                                            />
+                                                                            Failure
+                                                                        </label>
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
+                                        <div className="flex justify-end">
+                                            <Button
+                                                onClick={handleSaveNotifications}
+                                                disabled={savingNotifications}
+                                            >
+                                                {savingNotifications ? (
+                                                    <>
+                                                        <Settings className="h-4 w-4 mr-2 animate-spin" />
+                                                        Saving...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Save className="h-4 w-4 mr-2" />
+                                                        Save Notification Settings
+                                                    </>
+                                                )}
+                                            </Button>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="text-center py-8">
+                                        <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                                        <h3 className="text-lg font-medium text-gray-900 mb-2">Failed to load notification settings</h3>
+                                        <p className="text-gray-600">Please try refreshing the page.</p>
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     </TabsContent>

@@ -19,15 +19,22 @@ export interface AuthResult {
 
 export async function authMiddleware(request: Request): Promise<AuthResult> {
     try {
+        let token: string | null = null;
+
+        // Check Authorization header first
         const authHeader = request.headers.get('authorization');
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return { success: false, error: 'No authorization token provided' };
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.substring(7); // Remove 'Bearer ' prefix
         }
 
-        const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+        // If no token in header, check query parameter (for EventSource compatibility)
+        if (!token && request.url) {
+            const url = new URL(request.url);
+            token = url.searchParams.get('token');
+        }
 
         if (!token) {
-            return { success: false, error: 'Invalid token format' };
+            return { success: false, error: 'No authorization token provided' };
         }
 
         // Verify JWT token

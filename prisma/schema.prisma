@@ -32,6 +32,7 @@ model User {
   serviceCredentials ServiceCredential[]
   notificationSettings NotificationSettings?
   emailTemplates     EmailTemplate[]
+  pushSubscription   PushSubscription?
 }
 
 enum UserRole {
@@ -417,6 +418,18 @@ model EmailTemplate {
   updatedAt   DateTime            @updatedAt
   
   @@unique([userId, name])
+}
+
+// Push Notification Subscriptions for PWA
+model PushSubscription {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint    String
+  p256dhKey   String
+  authKey     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 enum NotificationType {

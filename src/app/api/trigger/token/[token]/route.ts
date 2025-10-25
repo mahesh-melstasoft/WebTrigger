@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import axios from 'axios';
 import { SlackService } from '@/lib/slack';
 import { executeAction, ActionPayload } from '@/lib/actionExecutor';
+import { sendRealtimeNotification } from '@/app/api/notifications/realtime/route';
 
 // Helper function to execute actions for a callback
 async function executeActionsForCallback(callbackId: string, payload: ActionPayload, prisma: typeof import('@/lib/prisma').prisma) {
@@ -123,6 +124,20 @@ export async function GET(
                 },
             });
 
+            // Send real-time notification for success
+            sendRealtimeNotification(callback.userId, {
+                type: 'webhook_success',
+                title: 'Webhook Success',
+                message: `${callback.name} executed successfully (Status: ${response.status}, ${responseTime}ms)`,
+                data: {
+                    callbackId: callback.id,
+                    callbackName: callback.name,
+                    statusCode: response.status,
+                    responseTime,
+                    triggeredAt: new Date().toISOString()
+                }
+            });
+
             // Send Slack notification if webhook URL is configured
             if (callback.user.slackWebhookUrl) {
                 try {
@@ -219,6 +234,19 @@ export async function GET(
                     callbackId: callback.id,
                     success: false,
                 },
+            });
+
+            // Send real-time notification for failure
+            sendRealtimeNotification(callback.userId, {
+                type: 'webhook_failure',
+                title: 'Webhook Failed',
+                message: `${callback.name} failed: ${errorMessage}`,
+                data: {
+                    callbackId: callback.id,
+                    callbackName: callback.name,
+                    error: errorMessage,
+                    triggeredAt: new Date().toISOString()
+                }
             });
 
             // Send Slack notification for failed webhook if webhook URL is configured

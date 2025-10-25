@@ -22,8 +22,13 @@ import {
     Webhook,
     Activity,
     Settings,
-    CreditCard
+    CreditCard,
+    Bell,
+    BellOff,
+    Wifi,
+    WifiOff
 } from 'lucide-react';
+import { useRealtimeNotifications } from '@/lib/useRealtimeNotifications';
 
 interface Callback {
     id: string;
@@ -40,6 +45,15 @@ export default function Dashboard() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const router = useRouter();
+
+    // Real-time notifications
+    const {
+        notifications,
+        isConnected,
+        error: notificationError,
+        clearNotifications,
+        markAsRead
+    } = useRealtimeNotifications();
 
     const fetchCallbacks = useCallback(async () => {
         const token = localStorage.getItem('token');
@@ -180,37 +194,37 @@ export default function Dashboard() {
                             </div>
 
                             <div className="flex items-center gap-3">
-                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px] px-4">
                                     <Link href="/dashboard/logs">
                                         <FileText className="h-4 w-4 mr-2" />
                                         View Logs
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px] px-4">
                                     <Link href="/dashboard/analytics">
                                         <Activity className="h-4 w-4 mr-2" />
                                         Analytics
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px] px-4">
                                     <Link href="/billing">
                                         <CreditCard className="h-4 w-4 mr-2" />
                                         Billing
                                     </Link>
                                 </Button>
-                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                                <Button asChild variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px] px-4">
                                     <Link href="/settings">
                                         <Settings className="h-4 w-4 mr-2" />
                                         Settings
                                     </Link>
                                 </Button>
-                                <Button asChild>
+                                <Button asChild className="min-h-[44px] px-6">
                                     <Link href="/dashboard/add">
                                         <Plus className="h-4 w-4 mr-2" />
                                         Add Callback
                                     </Link>
                                 </Button>
-                                <Button variant="outline" onClick={handleLogout} className="border-gray-300 text-gray-700 hover:bg-gray-50">
+                                <Button variant="outline" onClick={handleLogout} className="border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[44px] px-4">
                                     <LogOut className="h-4 w-4 mr-2" />
                                     Logout
                                 </Button>
@@ -225,24 +239,113 @@ export default function Dashboard() {
                         </Alert>
                     )}
 
+                    {/* Real-time Notifications */}
+                    {notifications.length > 0 && (
+                        <Card className="mb-6 bg-blue-50 border-blue-200">
+                            <CardHeader className="pb-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        {isConnected ? (
+                                            <Wifi className="h-4 w-4 text-green-500" />
+                                        ) : (
+                                            <WifiOff className="h-4 w-4 text-red-500" />
+                                        )}
+                                        <CardTitle className="text-sm font-medium text-blue-900">
+                                            Real-time Notifications
+                                        </CardTitle>
+                                        <Badge variant="secondary" className="text-xs">
+                                            {notifications.length}
+                                        </Badge>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={clearNotifications}
+                                            className="text-blue-700 hover:text-blue-900 hover:bg-blue-100"
+                                        >
+                                            Clear All
+                                        </Button>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardContent className="pt-0">
+                                <div className="space-y-2 max-h-40 overflow-y-auto">
+                                    {notifications.slice(0, 5).map((notification, index) => (
+                                        <div
+                                            key={`${notification.timestamp}-${index}`}
+                                            className={`flex items-start gap-3 p-3 rounded-lg text-sm ${
+                                                notification.type === 'webhook_success'
+                                                    ? 'bg-green-50 border border-green-200'
+                                                    : notification.type === 'webhook_failure'
+                                                    ? 'bg-red-50 border border-red-200'
+                                                    : 'bg-gray-50 border border-gray-200'
+                                            }`}
+                                        >
+                                            {notification.type === 'webhook_success' ? (
+                                                <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                                            ) : notification.type === 'webhook_failure' ? (
+                                                <XCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
+                                            ) : (
+                                                <Bell className="h-4 w-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-medium text-gray-900">{notification.title}</p>
+                                                <p className="text-gray-600">{notification.message}</p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    {new Date(notification.timestamp).toLocaleTimeString()}
+                                                </p>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => markAsRead(notification.timestamp)}
+                                                className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                                            >
+                                                ×
+                                            </Button>
+                                        </div>
+                                    ))}
+                                    {notifications.length > 5 && (
+                                        <p className="text-xs text-gray-500 text-center py-2">
+                                            +{notifications.length - 5} more notifications
+                                        </p>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Connection Status Alert */}
+                    {notificationError && (
+                        <Alert className="mb-6 bg-yellow-50 border-yellow-200 text-yellow-800">
+                            <BellOff className="h-4 w-4" />
+                            <AlertDescription>
+                                Real-time notifications: {notificationError}
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
                         <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-600">Total Callbacks</CardTitle>
-                                <Webhook className="h-4 w-4 text-gray-500" />
+                                <Webhook className="h-4 w-4 text-gray-500" aria-hidden="true" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-gray-900">{callbacks.length}</div>
+                                <div className="text-2xl font-bold text-gray-900" aria-label={`${callbacks.length} total callbacks`}>
+                                    {callbacks.length}
+                                </div>
                             </CardContent>
                         </Card>
 
                         <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-600">Active Callbacks</CardTitle>
-                                <CheckCircle className="h-4 w-4 text-green-500" />
+                                <CheckCircle className="h-4 w-4 text-green-500" aria-hidden="true" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-green-600">
+                                <div className="text-2xl font-bold text-green-600" aria-label={`${callbacks.filter(cb => cb.activeStatus).length} active callbacks`}>
                                     {callbacks.filter(cb => cb.activeStatus).length}
                                 </div>
                             </CardContent>
@@ -251,10 +354,10 @@ export default function Dashboard() {
                         <Card className="bg-white/80 backdrop-blur-sm border-gray-200 shadow-sm">
                             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                 <CardTitle className="text-sm font-medium text-gray-600">Inactive Callbacks</CardTitle>
-                                <XCircle className="h-4 w-4 text-red-500" />
+                                <XCircle className="h-4 w-4 text-red-500" aria-hidden="true" />
                             </CardHeader>
                             <CardContent>
-                                <div className="text-2xl font-bold text-red-600">
+                                <div className="text-2xl font-bold text-red-600" aria-label={`${callbacks.filter(cb => !cb.activeStatus).length} inactive callbacks`}>
                                     {callbacks.filter(cb => !cb.activeStatus).length}
                                 </div>
                             </CardContent>
@@ -271,12 +374,23 @@ export default function Dashboard() {
                         <CardContent>
                             {callbacks.length === 0 ? (
                                 <div className="text-center py-12">
-                                    <Webhook className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                                    <Webhook className="h-12 w-12 text-gray-400 mx-auto mb-4" aria-hidden="true" />
                                     <h3 className="text-lg font-medium text-gray-900 mb-2">No callbacks yet</h3>
-                                    <p className="text-gray-600 mb-4">
-                                        Get started by creating your first callback endpoint.
+                                    <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                                        Get started by creating your first webhook endpoint. WebTrigger will send HTTP requests to your specified URL when triggered.
                                     </p>
-                                    <Button asChild>
+
+                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 max-w-md mx-auto">
+                                        <h4 className="font-medium text-blue-900 mb-2">Quick Start Guide</h4>
+                                        <ol className="text-sm text-blue-800 space-y-1 text-left">
+                                            <li>1. Click &quot;Create Your First Callback&quot; below</li>
+                                            <li>2. Enter a name and your webhook URL</li>
+                                            <li>3. Copy the trigger URL and use it in your applications</li>
+                                            <li>4. Test your webhook to ensure it works</li>
+                                        </ol>
+                                    </div>
+
+                                    <Button asChild className="min-h-[44px] px-6">
                                         <Link href="/dashboard/add">
                                             <Plus className="h-4 w-4 mr-2" />
                                             Create Your First Callback
@@ -284,115 +398,232 @@ export default function Dashboard() {
                                     </Button>
                                 </div>
                             ) : (
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="border-gray-200 hover:bg-gray-50">
-                                            <TableHead className="text-gray-600">Name</TableHead>
-                                            <TableHead className="text-gray-600">Status</TableHead>
-                                            <TableHead className="text-gray-600">Callback URL</TableHead>
-                                            <TableHead className="text-gray-600">Trigger URL</TableHead>
-                                            <TableHead className="text-gray-600">Created</TableHead>
-                                            <TableHead className="w-[70px] text-gray-600">Actions</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
+                                <>
+                                    {/* Mobile Card View */}
+                                    <div className="md:hidden space-y-4">
                                         {callbacks.map((callback) => (
-                                            <TableRow key={callback.id} className="border-gray-200 hover:bg-gray-50">
-                                                <TableCell className="text-gray-900">
-                                                    <div className="font-medium text-gray-900">
-                                                        {callback.name}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge variant={callback.activeStatus ? 'default' : 'secondary'} className={callback.activeStatus ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
-                                                        {callback.activeStatus ? (
-                                                            <>
-                                                                <CheckCircle className="h-3 w-3 mr-1" />
-                                                                Active
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <XCircle className="h-3 w-3 mr-1" />
-                                                                Inactive
-                                                            </>
-                                                        )}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-gray-600">
-                                                    <div className="max-w-xs">
-                                                        <p className="text-sm text-gray-600 truncate" title={callback.callbackUrl}>
-                                                            {callback.callbackUrl}
-                                                        </p>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-gray-600">
-                                                    <div className="space-y-2">
-                                                        {/* Token-based URL */}
-                                                        <div className="flex items-center gap-2">
-                                                            <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-700">
-                                                                /api/trigger/token/{callback.triggerToken?.substring(0, 8)}...
-                                                            </code>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => copyTriggerUrl(callback.triggerToken)}
-                                                                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                            <Card key={callback.id} className="bg-white/90 backdrop-blur-sm border-gray-200">
+                                                <CardContent className="p-4">
+                                                    <div className="flex justify-between items-start mb-3">
+                                                        <div className="flex-1 min-w-0">
+                                                            <h3 className="font-medium text-gray-900 truncate" title={callback.name}>
+                                                                {callback.name}
+                                                            </h3>
+                                                            <Badge
+                                                                variant={callback.activeStatus ? 'default' : 'secondary'}
+                                                                className={`mt-1 ${callback.activeStatus ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}
                                                             >
-                                                                <Copy className="h-3 w-3" />
-                                                            </Button>
+                                                                {callback.activeStatus ? (
+                                                                    <>
+                                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                                        Active
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <XCircle className="h-3 w-3 mr-1" />
+                                                                        Inactive
+                                                                    </>
+                                                                )}
+                                                            </Badge>
                                                         </div>
-
-                                                        {/* Custom path URL */}
-                                                        {callback.customPath && (
-                                                            <div className="flex items-center gap-2">
-                                                                <code className="text-xs bg-green-100 px-2 py-1 rounded font-mono text-green-700">
-                                                                    /api/trigger/custom/{callback.customPath}
-                                                                </code>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
-                                                                    onClick={() => copyTriggerUrl(callback.customPath!, `${window.location.origin}/api/trigger/custom/${callback.customPath}`)}
-                                                                    className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                                                    className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100 min-w-[44px] min-h-[44px]"
+                                                                    aria-label={`Actions for ${callback.name}`}
                                                                 >
-                                                                    <Copy className="h-3 w-3" />
+                                                                    <MoreHorizontal className="h-4 w-4" />
                                                                 </Button>
-                                                            </div>
-                                                        )}
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="bg-white border-gray-200">
+                                                                <DropdownMenuItem asChild className="text-gray-700 hover:bg-gray-50">
+                                                                    <Link href={`/dashboard/edit/${callback.id}`}>
+                                                                        <Edit className="h-4 w-4 mr-2" />
+                                                                        Edit
+                                                                    </Link>
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    onClick={() => handleDelete(callback.id)}
+                                                                    className="text-red-600 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4 mr-2" />
+                                                                    Delete
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
                                                     </div>
-                                                </TableCell>
-                                                <TableCell className="text-gray-600">
-                                                    <span className="text-sm text-gray-600">
-                                                        {new Date(callback.createdAt).toLocaleDateString()}
-                                                    </span>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="bg-white border-gray-200">
-                                                            <DropdownMenuItem asChild className="text-gray-700 hover:bg-gray-50">
-                                                                <Link href={`/dashboard/edit/${callback.id}`}>
-                                                                    <Edit className="h-4 w-4 mr-2" />
-                                                                    Edit
-                                                                </Link>
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem
-                                                                onClick={() => handleDelete(callback.id)}
-                                                                className="text-red-600 hover:bg-red-50"
-                                                            >
-                                                                <Trash2 className="h-4 w-4 mr-2" />
-                                                                Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TableRow>
+
+                                                    <div className="space-y-3 text-sm">
+                                                        <div>
+                                                            <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Callback URL</p>
+                                                            <p className="text-gray-700 break-all" title={callback.callbackUrl}>
+                                                                {callback.callbackUrl}
+                                                            </p>
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Trigger URLs</p>
+                                                            <div className="space-y-2">
+                                                                {/* Token-based URL */}
+                                                                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded">
+                                                                    <code className="text-xs bg-white px-2 py-1 rounded font-mono text-gray-700 flex-1 min-w-0 break-all">
+                                                                        /api/trigger/token/{callback.triggerToken?.substring(0, 8)}...
+                                                                    </code>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => copyTriggerUrl(callback.triggerToken)}
+                                                                        className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0 min-w-[44px] min-h-[44px]"
+                                                                        aria-label="Copy token-based trigger URL"
+                                                                    >
+                                                                        <Copy className="h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+
+                                                                {/* Custom path URL */}
+                                                                {callback.customPath && (
+                                                                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded">
+                                                                        <code className="text-xs bg-white px-2 py-1 rounded font-mono text-green-700 flex-1 min-w-0 break-all">
+                                                                            /api/trigger/custom/{callback.customPath}
+                                                                        </code>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => copyTriggerUrl(callback.customPath!, `${window.location.origin}/api/trigger/custom/${callback.customPath}`)}
+                                                                            className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 flex-shrink-0 min-w-[44px] min-h-[44px]"
+                                                                            aria-label="Copy custom path trigger URL"
+                                                                        >
+                                                                            <Copy className="h-4 w-4" />
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t">
+                                                            <span>Created {new Date(callback.createdAt).toLocaleDateString()}</span>
+                                                        </div>
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
                                         ))}
-                                    </TableBody>
-                                </Table>
+                                    </div>
+
+                                    {/* Desktop Table View */}
+                                    <div className="hidden md:block">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow className="border-gray-200 hover:bg-gray-50">
+                                                    <TableHead className="text-gray-600">Name</TableHead>
+                                                    <TableHead className="text-gray-600">Status</TableHead>
+                                                    <TableHead className="text-gray-600">Callback URL</TableHead>
+                                                    <TableHead className="text-gray-600">Trigger URL</TableHead>
+                                                    <TableHead className="text-gray-600">Created</TableHead>
+                                                    <TableHead className="w-[70px] text-gray-600">Actions</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {callbacks.map((callback) => (
+                                                    <TableRow key={callback.id} className="border-gray-200 hover:bg-gray-50">
+                                                        <TableCell className="text-gray-900">
+                                                            <div className="font-medium text-gray-900">
+                                                                {callback.name}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <Badge variant={callback.activeStatus ? 'default' : 'secondary'} className={callback.activeStatus ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                                                                {callback.activeStatus ? (
+                                                                    <>
+                                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                                        Active
+                                                                    </>
+                                                                ) : (
+                                                                    <>
+                                                                        <XCircle className="h-3 w-3 mr-1" />
+                                                                        Inactive
+                                                                    </>
+                                                                )}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="text-gray-600">
+                                                            <div className="max-w-xs">
+                                                                <p className="text-sm text-gray-600 truncate" title={callback.callbackUrl}>
+                                                                    {callback.callbackUrl}
+                                                                </p>
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-gray-600">
+                                                            <div className="space-y-2">
+                                                                {/* Token-based URL */}
+                                                                <div className="flex items-center gap-2">
+                                                                    <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono text-gray-700">
+                                                                        /api/trigger/token/{callback.triggerToken?.substring(0, 8)}...
+                                                                    </code>
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        onClick={() => copyTriggerUrl(callback.triggerToken)}
+                                                                        className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                                                    >
+                                                                        <Copy className="h-3 w-3" />
+                                                                    </Button>
+                                                                </div>
+
+                                                                {/* Custom path URL */}
+                                                                {callback.customPath && (
+                                                                    <div className="flex items-center gap-2">
+                                                                        <code className="text-xs bg-green-100 px-2 py-1 rounded font-mono text-green-700">
+                                                                            /api/trigger/custom/{callback.customPath}
+                                                                        </code>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => copyTriggerUrl(callback.customPath!, `${window.location.origin}/api/trigger/custom/${callback.customPath}`)}
+                                                                            className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                                                        >
+                                                                            <Copy className="h-3 w-3" />
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                        <TableCell className="text-gray-600">
+                                                            <span className="text-sm text-gray-600">
+                                                                {new Date(callback.createdAt).toLocaleDateString()}
+                                                            </span>
+                                                        </TableCell>
+                                                        <TableCell>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-gray-700 hover:bg-gray-100">
+                                                                        <MoreHorizontal className="h-4 w-4" />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent align="end" className="bg-white border-gray-200">
+                                                                    <DropdownMenuItem asChild className="text-gray-700 hover:bg-gray-50">
+                                                                        <Link href={`/dashboard/edit/${callback.id}`}>
+                                                                            <Edit className="h-4 w-4 mr-2" />
+                                                                            Edit
+                                                                        </Link>
+                                                                    </DropdownMenuItem>
+                                                                    <DropdownMenuItem
+                                                                        onClick={() => handleDelete(callback.id)}
+                                                                        className="text-red-600 hover:bg-red-50"
+                                                                    >
+                                                                        <Trash2 className="h-4 w-4 mr-2" />
+                                                                        Delete
+                                                                    </DropdownMenuItem>
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </>
                             )}
                         </CardContent>
                     </Card>
