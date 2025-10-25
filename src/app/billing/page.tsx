@@ -38,6 +38,7 @@ interface Subscription {
     status: string;
     currentPeriodStart: string;
     currentPeriodEnd: string;
+    stripeSubscriptionId?: string | null;
     plan: {
         id: string;
         name: string;
@@ -108,28 +109,53 @@ export default function BillingPage() {
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('/api/payments/create-session', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                    planId,
-                    successUrl: `${window.location.origin}/billing?success=true`,
-                    cancelUrl: `${window.location.origin}/billing?canceled=true`,
-                }),
-            });
 
-            if (response.ok) {
-                const data = await response.json();
-                window.location.href = data.url;
+            // Check if user already has a subscription
+            if (subscription && subscription.stripeSubscriptionId) {
+                // User has an existing subscription - upgrade/downgrade
+                const response = await fetch('/api/subscription/upgrade', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ newPlanId: planId }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setSuccess(data.message || 'Subscription updated successfully!');
+                    // Refresh data
+                    setTimeout(() => fetchBillingData(), 1000);
+                } else {
+                    const errorData = await response.json();
+                    setError(errorData.error || 'Failed to update subscription');
+                }
             } else {
-                const errorData = await response.json();
-                setError(errorData.error || 'Failed to create payment session');
+                // New subscription - use Stripe checkout
+                const response = await fetch('/api/payments/create-session', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        planId,
+                        successUrl: `${window.location.origin}/billing?success=true`,
+                        cancelUrl: `${window.location.origin}/billing?canceled=true`,
+                    }),
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    window.location.href = data.url;
+                } else {
+                    const errorData = await response.json();
+                    setError(errorData.error || 'Failed to create payment session');
+                }
             }
         } catch (err) {
-            console.error('Error creating payment session:', err);
+            console.error('Error processing subscription:', err);
             setError('An error occurred while processing your request');
         }
     };
@@ -388,7 +414,9 @@ export default function BillingPage() {
                                                     variant={isPopular ? 'default' : 'outline'}
                                                     onClick={() => handleSubscribe(plan.id)}
                                                 >
-                                                    {subscription ? 'Upgrade' : 'Subscribe'}
+                                                    {subscription ? (
+                                                        plan.price > subscription.plan.price ? 'Upgrade' : 'Downgrade'
+                                                    ) : 'Subscribe'}
                                                 </Button>
                                             )}
                                         </CardContent>

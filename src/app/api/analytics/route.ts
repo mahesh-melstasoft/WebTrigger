@@ -67,8 +67,8 @@ export async function GET(request: NextRequest) {
         }).catch(() => []);
 
         // Get callback names for the above query
-        const callbackMap = new Map(callbacks.map(cb => [cb.id, cb.name]));
-        const triggersByCallbackWithNames = triggersByCallback.map(item => ({
+        const callbackMap = new Map(callbacks.map((cb: { id: string; name: string }) => [cb.id, cb.name]));
+        const triggersByCallbackWithNames = triggersByCallback.map((item: { callbackId: string; _count: { id: number } }) => ({
             name: callbackMap.get(item.callbackId) || 'Unknown',
             count: item._count.id,
         }));

@@ -66,10 +66,10 @@ export async function GET(request: NextRequest) {
         });
 
         const averageResponseTime = logsWithResponse.length > 0
-            ? Math.round(logsWithResponse.reduce((sum, log) => sum + (log.responseTime || 0), 0) / logsWithResponse.length)
+            ? Math.round(logsWithResponse.reduce((sum: number, log: { responseTime: number | null; success: boolean }) => sum + (log.responseTime || 0), 0) / logsWithResponse.length)
             : 0;
 
-        const successCount = logsWithResponse.filter(log => log.success).length;
+        const successCount = logsWithResponse.filter((log: { responseTime: number | null; success: boolean }) => log.success).length;
         const successRate = logsWithResponse.length > 0
             ? Math.round((successCount / logsWithResponse.length) * 100)
             : 100;
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 
         // Get callback details
         const callbackDetails = await Promise.all(
-            topCallbacks.map(async (item) => {
+            topCallbacks.map(async (item: { callbackId: string; _sum: { requestCount: number | null } }) => {
                 const callback = await prisma.callback.findUnique({
                     where: { id: item.callbackId },
                     select: { id: true, name: true },
