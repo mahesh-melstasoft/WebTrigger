@@ -32,17 +32,17 @@ export default function PWAPage() {
     const [isInstallable, setIsInstallable] = useState(false);
     const [isInstalled, setIsInstalled] = useState(false);
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+    const [isFirefox, setIsFirefox] = useState(false);
     const [notificationPermission, setNotificationPermission] = useState<NotificationPermission>('default');
-    // router is not required here but can be enabled later if navigation is needed
-    // const _router = useRouter();
-
-    // Browser notifications (getter used elsewhere) - keep hook for side-effects when needed
-    // const _browserNotifications = useBrowserNotifications();
 
     // Push notifications
     const pushNotifications = usePushNotifications();
 
     useEffect(() => {
+        // Detect Firefox
+        const isFirefoxBrowser = navigator.userAgent.toLowerCase().includes('firefox');
+        setIsFirefox(isFirefoxBrowser);
+
         // Check if app is already installed
         const checkInstalled = () => {
             if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -136,13 +136,38 @@ export default function PWAPage() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {isInstalled ? (
+                            {isInstalled && (
                                 <Alert className="bg-green-50 border-green-200 text-green-800">
                                     <CheckCircle className="h-4 w-4" />
                                     <AlertDescription>
                                         WebTrigger PWA is installed! You can now use it offline and receive notifications.
                                     </AlertDescription>
                                 </Alert>
+                            )}
+                            {isFirefox ? (
+                                <div className="space-y-4">
+                                    <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                                        <Info className="h-4 w-4" />
+                                        <AlertDescription>
+                                            Firefox detected! WebTrigger can be installed as an app. Click below for installation instructions.
+                                        </AlertDescription>
+                                    </Alert>
+                                    <div className="space-y-3">
+                                        <h4 className="font-medium text-gray-900">Firefox Installation Steps:</h4>
+                                        <ol className="text-sm text-gray-600 space-y-2 ml-4">
+                                            <li>1. Click the menu button (☰) in the top right corner</li>
+                                            <li>2. Select &quot;Install This Site as an App&quot;</li>
+                                            <li>3. Click &quot;Install&quot; in the confirmation dialog</li>
+                                            <li>4. WebTrigger will be added to your home screen</li>
+                                        </ol>
+                                    </div>
+                                    <Alert className="bg-yellow-50 border-yellow-200 text-yellow-800">
+                                        <Info className="h-4 w-4" />
+                                        <AlertDescription>
+                                            Firefox PWA support is more limited than Chrome. Some advanced features may not be available.
+                                        </AlertDescription>
+                                    </Alert>
+                                </div>
                             ) : isInstallable ? (
                                 <div className="space-y-4">
                                     <Alert className="bg-blue-50 border-blue-200 text-blue-800">

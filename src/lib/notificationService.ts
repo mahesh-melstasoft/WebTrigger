@@ -330,8 +330,8 @@ export class NotificationOrchestrator {
     // Determine which event type this is
     const isSuccess = payload.success;
     const shouldNotify = isSuccess
-      ? (settings.emailOnSuccess || settings.whatsappOnSuccess || settings.telegramOnSuccess || settings.smsOnSuccess)
-      : (settings.emailOnFailure || settings.whatsappOnFailure || settings.telegramOnFailure || settings.smsOnFailure);
+      ? (settings.emailOnSuccess || settings.whatsappOnSuccess || settings.telegramOnSuccess || settings.smsOnSuccess || settings.pushOnSuccess)
+      : (settings.emailOnFailure || settings.whatsappOnFailure || settings.telegramOnFailure || settings.smsOnFailure || settings.pushOnFailure);
 
     if (!shouldNotify) return;
 
@@ -359,10 +359,15 @@ export class NotificationOrchestrator {
       ((isSuccess && settings.smsOnSuccess) || (!isSuccess && settings.smsOnFailure))) {
       await this.smsService.sendNotification(settings.smsNumbers, payload);
     }
+
+    // Send Push Notifications
+    if (settings.pushEnabled && ((isSuccess && settings.pushOnSuccess) || (!isSuccess && settings.pushOnFailure))) {
+      await this.sendPushToUser(userId, payload);
+    }
   }
 
-  // Send a push notification to a user's stored web push subscription (if present)
-  public async sendPushToUser(userId: string, payload: NotificationPayload): Promise<boolean> {
+  // Send a push notification to a user's stored web push subscription (if present) with retry logic
+  public async sendPushToUser(userId: string, payload: NotificationPayload, maxRetries: number = 3): Promise<boolean> {
     try {
       const subscription = await prisma.pushSubscription.findUnique({ where: { userId } });
       if (!subscription) return false;
@@ -370,24 +375,39 @@ export class NotificationOrchestrator {
       // Import sendPush dynamically to avoid loading web-push in non-server contexts
       const { sendPush } = await import('./webpush');
 
-      try {
-        await sendPush({ endpoint: subscription.endpoint, p256dhKey: subscription.p256dhKey, authKey: subscription.authKey }, payload);
-        return true;
-      } catch (err: unknown) {
-        // If subscription is gone (410) or invalid, remove it
-        const errObj = typeof err === 'object' && err ? (err as Record<string, unknown>) : null;
-        const status = errObj && 'statusCode' in errObj ? (errObj['statusCode'] as number | undefined) : undefined;
-        // web-push library may expose statusCode or cause with 410; be conservative
-        if (status === 410 || (errObj && ('status' in errObj) && errObj['status'] === 410)) {
-          try {
-            await prisma.pushSubscription.deleteMany({ where: { userId } });
-          } catch (delErr) {
-            console.warn('Failed to delete stale push subscription:', delErr);
+      let lastError: unknown;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          await sendPush({ endpoint: subscription.endpoint, p256dhKey: subscription.p256dhKey, authKey: subscription.authKey }, payload);
+          return true;
+        } catch (err: unknown) {
+          lastError = err;
+          const errObj = typeof err === 'object' && err ? (err as Record<string, unknown>) : null;
+          const status = errObj && 'statusCode' in errObj ? (errObj['statusCode'] as number | undefined) : undefined;
+          const is410 = status === 410 || (errObj && ('status' in errObj) && errObj['status'] === 410);
+
+          if (is410) {
+            // Subscription is gone or invalid, remove it immediately
+            try {
+              await prisma.pushSubscription.deleteMany({ where: { userId } });
+            } catch (delErr) {
+              console.warn('Failed to delete stale push subscription:', delErr);
+            }
+            return false;
+          }
+
+          // For other errors, retry with exponential backoff if not the last attempt
+          if (attempt < maxRetries) {
+            const delay = Math.pow(2, attempt) * 1000; // 1s, 2s, 4s
+            console.warn(`Push notification attempt ${attempt + 1} failed, retrying in ${delay}ms:`, err);
+            await new Promise(resolve => setTimeout(resolve, delay));
           }
         }
-        console.error('Failed to send push to user:', err);
-        return false;
       }
+
+      // All retries failed
+      console.error(`Push notification failed after ${maxRetries + 1} attempts:`, lastError);
+      return false;
     } catch (error) {
       console.error('sendPushToUser error:', error);
       return false;
@@ -534,6 +554,31 @@ User: {{userEmail}}`,
     };
 
     return templates[type as keyof typeof templates] || templates.WEBHOOK_SUCCESS;
+  }
+
+  // Cleanup stale push subscriptions - call this periodically (e.g., daily cron job)
+  public async cleanupStaleSubscriptions(): Promise<{ deleted: number }> {
+    try {
+      // Get all subscriptions older than 30 days that haven't been used recently
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // For now, we'll do a simple cleanup based on age
+      // In a production system, you might want to test each subscription
+      const result = await prisma.pushSubscription.deleteMany({
+        where: {
+          createdAt: {
+            lt: thirtyDaysAgo
+          }
+        }
+      });
+
+      console.log(`Cleaned up ${result.count} stale push subscriptions`);
+      return { deleted: result.count };
+    } catch (error) {
+      console.error('Failed to cleanup stale subscriptions:', error);
+      return { deleted: 0 };
+    }
   }
 }
 

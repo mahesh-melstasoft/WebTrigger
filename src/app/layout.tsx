@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import MobileShell from "@/components/ui/mobile-shell/MobileShell";
 import InstallPrompt from "@/components/pwa/InstallPrompt";
+import ServiceWorkerRegister from "@/components/pwa/ServiceWorkerRegister";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -111,6 +112,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <MobileShell>{children}</MobileShell>
         <InstallPrompt />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );

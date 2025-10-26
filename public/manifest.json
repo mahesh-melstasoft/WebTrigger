@@ -6,67 +6,19 @@
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#3b82f6",
-    "orientation": "portrait-primary",
-    "categories": [
-        "productivity",
-        "developer-tools"
-    ],
+    "orientation": "portrait",
     "lang": "en-US",
     "dir": "ltr",
     "icons": [
         {
             "src": "/icon-192x192.png",
             "sizes": "192x192",
-            "type": "image/png",
-            "purpose": "any maskable"
+            "type": "image/png"
         },
         {
             "src": "/icon-512x512.png",
             "sizes": "512x512",
-            "type": "image/png",
-            "purpose": "any maskable"
-        }
-    ],
-    "shortcuts": [
-        {
-            "name": "Dashboard",
-            "short_name": "Dashboard",
-            "description": "View your webhook dashboard",
-            "url": "/dashboard",
-            "icons": [
-                {
-                    "src": "/icon-192x192.png",
-                    "sizes": "192x192"
-                }
-            ]
-        },
-        {
-            "name": "Add Callback",
-            "short_name": "Add",
-            "description": "Create a new webhook callback",
-            "url": "/dashboard/add",
-            "icons": [
-                {
-                    "src": "/icon-192x192.png",
-                    "sizes": "192x192"
-                }
-            ]
-        }
-    ],
-    "screenshots": [
-        {
-            "src": "/screenshot-mobile.png",
-            "sizes": "390x844",
-            "type": "image/png",
-            "form_factor": "narrow",
-            "label": "WebTrigger Dashboard on Mobile"
-        },
-        {
-            "src": "/screenshot-desktop.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide",
-            "label": "WebTrigger Dashboard on Desktop"
+            "type": "image/png"
         }
     ]
 }

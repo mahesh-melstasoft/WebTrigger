@@ -29,14 +29,22 @@ export class PushNotificationManager {
         }
 
         try {
-            // Register service worker if not already registered
+            // Check if service worker is already registered globally
             if (!this.serviceWorkerRegistration) {
-                this.serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js', {
-                    scope: '/'
-                });
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                const existingRegistration = registrations.find(reg => reg.scope === `${window.location.origin}/`);
 
-                // Wait for the service worker to be ready
-                await navigator.serviceWorker.ready;
+                if (existingRegistration) {
+                    this.serviceWorkerRegistration = existingRegistration;
+                } else {
+                    // Register service worker if not already registered
+                    this.serviceWorkerRegistration = await navigator.serviceWorker.register('/sw.js', {
+                        scope: '/'
+                    });
+
+                    // Wait for the service worker to be ready
+                    await navigator.serviceWorker.ready;
+                }
             }
 
             return true;

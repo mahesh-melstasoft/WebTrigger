@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
     ArrowLeft,
     Save,
@@ -79,6 +80,9 @@ interface NotificationSettings {
     smsNumbers: string[];
     smsOnSuccess: boolean;
     smsOnFailure: boolean;
+    pushEnabled: boolean;
+    pushOnSuccess: boolean;
+    pushOnFailure: boolean;
     hasPaidSubscription: boolean;
     subscriptionRequired: {
         whatsapp: boolean;
@@ -165,6 +169,16 @@ export default function SettingsPage() {
     const [savingNotifications, setSavingNotifications] = useState(false);
     const pushNotifications = usePushNotifications();
     const router = useRouter();
+    const [showWhatsAppTestModal, setShowWhatsAppTestModal] = useState(false);
+    const [selectedWhatsAppPhone, setSelectedWhatsAppPhone] = useState('');
+    const [whatsAppTestResponse, setWhatsAppTestResponse] = useState<{
+        success: boolean;
+        sid?: string;
+        error?: string;
+        code?: string;
+        message?: string;
+    } | null>(null);
+    const [sendingWhatsAppTest, setSendingWhatsAppTest] = useState(false);
 
     const fetchApiKeys = useCallback(async () => {
         const token = localStorage.getItem('token');
@@ -1131,6 +1145,56 @@ export default function SettingsPage() {
                                                     </div>
                                                 </div>
 
+                                                {pushNotifications.isSubscribed && (
+                                                    <>
+                                                        <div className="flex items-center space-x-2">
+                                                            <input
+                                                                type="checkbox"
+                                                                id="pushEnabled"
+                                                                checked={notificationSettings.pushEnabled}
+                                                                onChange={(e) => setNotificationSettings({
+                                                                    ...notificationSettings,
+                                                                    pushEnabled: e.target.checked
+                                                                })}
+                                                                className="rounded"
+                                                            />
+                                                            <Label htmlFor="pushEnabled">Enable push notifications</Label>
+                                                        </div>
+
+                                                        {notificationSettings.pushEnabled && (
+                                                            <div className="space-y-2">
+                                                                <Label>Notify on:</Label>
+                                                                <div className="flex gap-4">
+                                                                    <label className="flex items-center gap-2">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={notificationSettings.pushOnSuccess}
+                                                                            onChange={(e) => setNotificationSettings({
+                                                                                ...notificationSettings,
+                                                                                pushOnSuccess: e.target.checked
+                                                                            })}
+                                                                            className="rounded"
+                                                                        />
+                                                                        Success
+                                                                    </label>
+                                                                    <label className="flex items-center gap-2">
+                                                                        <input
+                                                                            type="checkbox"
+                                                                            checked={notificationSettings.pushOnFailure}
+                                                                            onChange={(e) => setNotificationSettings({
+                                                                                ...notificationSettings,
+                                                                                pushOnFailure: e.target.checked
+                                                                            })}
+                                                                            className="rounded"
+                                                                        />
+                                                                        Failure
+                                                                    </label>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+
                                                 {pushNotifications.error && (
                                                     <Alert>
                                                         <AlertDescription>{pushNotifications.error}</AlertDescription>
@@ -1257,29 +1321,10 @@ export default function SettingsPage() {
 
                                                         <div className="mt-4 flex gap-2">
                                                             <Button
-                                                                onClick={async () => {
-                                                                    setError('');
-                                                                    setSuccess('');
-                                                                    const token = localStorage.getItem('token');
-                                                                    try {
-                                                                        const resp = await fetch('/api/notifications/whatsapp/test', {
-                                                                            method: 'POST',
-                                                                            headers: {
-                                                                                'Content-Type': 'application/json',
-                                                                                Authorization: `Bearer ${token}`,
-                                                                            },
-                                                                            body: JSON.stringify({ phone: notificationSettings.whatsappNumbers[0] || undefined })
-                                                                        });
-                                                                        if (resp.ok) {
-                                                                            setSuccess('WhatsApp test message queued/sent successfully');
-                                                                        } else {
-                                                                            const data = await resp.json().catch(() => ({}));
-                                                                            setError(data.error || 'Failed to send test message');
-                                                                        }
-                                                                    } catch (err) {
-                                                                        console.error('WhatsApp test err:', err);
-                                                                        setError('Failed to send test message');
-                                                                    }
+                                                                onClick={() => {
+                                                                    setSelectedWhatsAppPhone(notificationSettings.whatsappNumbers[0] || '');
+                                                                    setWhatsAppTestResponse(null);
+                                                                    setShowWhatsAppTestModal(true);
                                                                 }}
                                                             >
                                                                 Send Test Message
@@ -1289,6 +1334,133 @@ export default function SettingsPage() {
                                                 )}
                                             </CardContent>
                                         </Card>
+
+                                        {/* WhatsApp Test Modal */}
+                                        <Dialog open={showWhatsAppTestModal} onOpenChange={setShowWhatsAppTestModal}>
+                                            <DialogContent className="sm:max-w-md">
+                                                <DialogHeader>
+                                                    <DialogTitle>Send WhatsApp Test Message</DialogTitle>
+                                                    <DialogDescription>
+                                                        Select a phone number and send a test message to verify your Twilio setup.
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="space-y-4">
+                                                    <div>
+                                                        <Label htmlFor="whatsappTestPhone">Phone Number</Label>
+                                                        <select
+                                                            id="whatsappTestPhone"
+                                                            value={selectedWhatsAppPhone}
+                                                            onChange={(e) => setSelectedWhatsAppPhone(e.target.value)}
+                                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                                        >
+                                                            {notificationSettings.whatsappNumbers.map((phone, index) => (
+                                                                <option key={index} value={phone}>
+                                                                    {phone}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+
+                                                    {whatsAppTestResponse && (
+                                                        <div className="space-y-2">
+                                                            <Label>Test Result</Label>
+                                                            <div className={`p-3 rounded border ${whatsAppTestResponse.success ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                                                                <div className="flex items-center gap-2 mb-2">
+                                                                    {whatsAppTestResponse.success ? (
+                                                                        <CheckCircle className="h-4 w-4 text-green-600" />
+                                                                    ) : (
+                                                                        <AlertCircle className="h-4 w-4 text-red-600" />
+                                                                    )}
+                                                                    <span className={`font-medium ${whatsAppTestResponse.success ? 'text-green-800' : 'text-red-800'}`}>
+                                                                        {whatsAppTestResponse.success ? 'Success' : 'Failed'}
+                                                                    </span>
+                                                                </div>
+                                                                {whatsAppTestResponse.sid && (
+                                                                    <div className="text-sm">
+                                                                        <strong>SID:</strong> <code className="bg-white px-1 rounded">{whatsAppTestResponse.sid}</code>
+                                                                    </div>
+                                                                )}
+                                                                {whatsAppTestResponse.error && (
+                                                                    <div className="text-sm">
+                                                                        <strong>Error:</strong> {whatsAppTestResponse.error}
+                                                                    </div>
+                                                                )}
+                                                                {whatsAppTestResponse.code && (
+                                                                    <div className="text-sm">
+                                                                        <strong>Code:</strong> {whatsAppTestResponse.code}
+                                                                    </div>
+                                                                )}
+                                                                {whatsAppTestResponse.message && (
+                                                                    <div className="text-sm">
+                                                                        <strong>Message:</strong> {whatsAppTestResponse.message}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    <div className="flex gap-2 justify-end">
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => setShowWhatsAppTestModal(false)}
+                                                        >
+                                                            Close
+                                                        </Button>
+                                                        <Button
+                                                            onClick={async () => {
+                                                                setSendingWhatsAppTest(true);
+                                                                setWhatsAppTestResponse(null);
+                                                                const token = localStorage.getItem('token');
+                                                                try {
+                                                                    const resp = await fetch('/api/notifications/whatsapp/test', {
+                                                                        method: 'POST',
+                                                                        headers: {
+                                                                            'Content-Type': 'application/json',
+                                                                            Authorization: `Bearer ${token}`,
+                                                                        },
+                                                                        body: JSON.stringify({ phone: selectedWhatsAppPhone })
+                                                                    });
+                                                                    const data = await resp.json().catch(() => ({}));
+                                                                    if (resp.ok) {
+                                                                        setWhatsAppTestResponse({
+                                                                            success: true,
+                                                                            sid: data.sid,
+                                                                            message: data.message
+                                                                        });
+                                                                    } else {
+                                                                        setWhatsAppTestResponse({
+                                                                            success: false,
+                                                                            error: data.error || 'Failed to send test message',
+                                                                            code: data.code,
+                                                                            message: data.message
+                                                                        });
+                                                                    }
+                                                                } catch (err) {
+                                                                    console.error('WhatsApp test err:', err);
+                                                                    setWhatsAppTestResponse({
+                                                                        success: false,
+                                                                        error: 'Failed to send test message',
+                                                                        message: 'Network error'
+                                                                    });
+                                                                } finally {
+                                                                    setSendingWhatsAppTest(false);
+                                                                }
+                                                            }}
+                                                            disabled={sendingWhatsAppTest || !selectedWhatsAppPhone}
+                                                        >
+                                                            {sendingWhatsAppTest ? (
+                                                                <>
+                                                                    <Settings className="h-4 w-4 mr-2 animate-spin" />
+                                                                    Sending...
+                                                                </>
+                                                            ) : (
+                                                                'Send Test'
+                                                            )}
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </DialogContent>
+                                        </Dialog>
 
                                         {/* Telegram Notifications */}
                                         <Card className="border-gray-200">

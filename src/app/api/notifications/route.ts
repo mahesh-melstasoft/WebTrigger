@@ -43,6 +43,9 @@ export async function GET(request: NextRequest) {
             smsNumbers: [],
             smsOnSuccess: false,
             smsOnFailure: true,
+            pushEnabled: false,
+            pushOnSuccess: false,
+            pushOnFailure: true,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
         };
@@ -130,6 +133,9 @@ export async function PUT(request: NextRequest) {
                 smsNumbers: hasPaidSubscription ? (data.smsNumbers ?? []) : [],
                 smsOnSuccess: data.smsOnSuccess ?? false,
                 smsOnFailure: data.smsOnFailure ?? true,
+                pushEnabled: data.pushEnabled ?? false,
+                pushOnSuccess: data.pushOnSuccess ?? false,
+                pushOnFailure: data.pushOnFailure ?? true,
             },
             create: {
                 userId: authResult.user!.id,
@@ -149,6 +155,9 @@ export async function PUT(request: NextRequest) {
                 smsNumbers: [],
                 smsOnSuccess: data.smsOnSuccess ?? false,
                 smsOnFailure: data.smsOnFailure ?? true,
+                pushEnabled: data.pushEnabled ?? false,
+                pushOnSuccess: data.pushOnSuccess ?? false,
+                pushOnFailure: data.pushOnFailure ?? true,
             },
         });
 
