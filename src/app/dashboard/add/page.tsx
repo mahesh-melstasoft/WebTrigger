@@ -112,9 +112,9 @@ export default function AddCallback() {
                                         aria-describedby="callback-url-help"
                                     />
                                 </div>
-                                    <p className="text-sm text-gray-500">
-                                        The URL where WebTrigger will send webhook payloads when triggered
-                                    </p>
+                                <p className="text-sm text-gray-500">
+                                    The URL where WebTrigger will send webhook payloads when triggered
+                                </p>
                             </div>
 
                             <div className="space-y-2">

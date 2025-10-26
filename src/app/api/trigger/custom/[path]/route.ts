@@ -119,6 +119,22 @@ export async function GET(
                 }
             }
 
+            // Try sending a push notification (non-blocking)
+            try {
+                const { getNotificationOrchestrator } = await import('@/lib/notificationService');
+                await getNotificationOrchestrator().sendPushToUser(callback.userId, {
+                    callbackName: callback.name,
+                    callbackUrl: callback.callbackUrl,
+                    success: true,
+                    statusCode: response.status,
+                    responseTime,
+                    triggeredAt: new Date(),
+                    userEmail: callback.user?.email || ''
+                });
+            } catch (pushErr) {
+                console.warn('Failed to send push notification (custom success):', pushErr);
+            }
+
             return NextResponse.json({
                 message: 'Callback executed successfully via custom path',
                 customPath: path,
@@ -200,6 +216,21 @@ export async function GET(
                     console.error('Failed to send Slack notification:', slackError);
                     // Don't fail the webhook execution if Slack fails
                 }
+
+                    // Try sending a push notification about failure (non-blocking)
+                    try {
+                        const { getNotificationOrchestrator } = await import('@/lib/notificationService');
+                        await getNotificationOrchestrator().sendPushToUser(callback.userId, {
+                            callbackName: callback.name,
+                            callbackUrl: callback.callbackUrl,
+                            success: false,
+                            error: errorMessage,
+                            triggeredAt: new Date(),
+                            userEmail: callback.user?.email || ''
+                        });
+                    } catch (pushErr) {
+                        console.warn('Failed to send push notification (custom failure):', pushErr);
+                    }
             }
 
             return NextResponse.json({

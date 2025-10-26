@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import MobileShell from "@/components/ui/mobile-shell/MobileShell";
+import InstallPrompt from "@/components/pwa/InstallPrompt";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -82,34 +84,33 @@ export default function RootLayout({
         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#3b82f6" />
         <meta name="msapplication-TileColor" content="#3b82f6" />
         <meta name="theme-color" content="#3b82f6" />
-            {/* Canonical for SEO */}
-            <link
-              rel="canonical"
-              href={process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.example.com"}
-            />
-            {/* Structured data (JSON-LD) for rich results */}
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
-                  "@context": "https://schema.org",
-                  "@type": "WebSite",
-                  name: "WebTrigger",
-                  url: process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.example.com",
-                  potentialAction: {
-                    "@type": "SearchAction",
-                    target:
-                      `${process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.example.com"}/search?q={search_term_string}`,
-                    "query-input": "required name=search_term_string",
-                  },
-                }),
-              }}
-            />
+        {/* Canonical for SEO */}
+        <link
+          rel="canonical"
+          href={process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.example.com"}
+        />
+        {/* Structured data (JSON-LD) for rich results */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              name: "WebTrigger",
+              url: process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.example.com",
+              potentialAction: {
+                "@type": "SearchAction",
+                target:
+                  `${process.env.NEXT_PUBLIC_BASE_URL || "https://your-domain.example.com"}/search?q={search_term_string}`,
+                "query-input": "required name=search_term_string",
+              },
+            }),
+          }}
+        />
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <MobileShell>{children}</MobileShell>
+        <InstallPrompt />
       </body>
     </html>
   );

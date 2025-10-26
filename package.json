@@ -40,6 +40,7 @@
     "lucide-react": "^0.542.0",
     "mqtt": "^5.14.1",
     "next": "15.5.2",
+    "next-auth": "^4.24.11",
     "next-pwa": "^5.6.0",
     "node-telegram-bot-api": "^0.66.0",
     "nodemailer": "^7.0.10",
@@ -54,7 +55,8 @@
     "stripe": "^18.5.0",
     "tailwind-merge": "^3.3.1",
     "twilio": "^5.10.3",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

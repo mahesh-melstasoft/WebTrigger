@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Mail, Lock, Shield } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 
 export default function LoginForm() {
     const [email, setEmail] = useState('');
@@ -231,6 +232,20 @@ export default function LoginForm() {
                             )}
                         </Button>
                     </form>
+
+                    <div className="mt-4">
+                        <div className="text-center mb-2 text-sm text-gray-500">Or sign in with</div>
+                        <div className="flex justify-center">
+                            <div className="flex gap-2">
+                                <Button onClick={() => signIn('google')} variant="outline">
+                                    Sign in with Google
+                                </Button>
+                                <Button onClick={() => signIn('github')} variant="outline">
+                                    Sign in with GitHub
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
 
                     <div className="mt-6 text-center text-sm">
                         <span className="text-gray-600">Don&apos;t have an account? </span>

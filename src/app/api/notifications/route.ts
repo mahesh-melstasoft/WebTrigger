@@ -99,9 +99,9 @@ export async function PUT(request: NextRequest) {
         else if (user?.role === 'ADMIN') maxRecipients = -1; // Unlimited
 
         const totalRecipients = (data.emailRecipients?.length || 0) +
-                               (data.whatsappNumbers?.length || 0) +
-                               (data.telegramChatIds?.length || 0) +
-                               (data.smsNumbers?.length || 0);
+            (data.whatsappNumbers?.length || 0) +
+            (data.telegramChatIds?.length || 0) +
+            (data.smsNumbers?.length || 0);
 
         if (maxRecipients !== -1 && totalRecipients > maxRecipients) {
             return NextResponse.json(

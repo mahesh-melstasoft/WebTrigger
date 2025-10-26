@@ -138,6 +138,22 @@ export async function GET(
                 }
             });
 
+            // Try sending a push notification (non-blocking)
+            try {
+                const { getNotificationOrchestrator } = await import('@/lib/notificationService');
+                await getNotificationOrchestrator().sendPushToUser(callback.userId, {
+                    callbackName: callback.name,
+                    callbackUrl: callback.callbackUrl,
+                    success: true,
+                    statusCode: response.status,
+                    responseTime,
+                    triggeredAt: new Date(),
+                    userEmail: callback.user?.email || ''
+                });
+            } catch (pushErr) {
+                console.warn('Failed to send push notification (success path):', pushErr);
+            }
+
             // Send Slack notification if webhook URL is configured
             if (callback.user.slackWebhookUrl) {
                 try {

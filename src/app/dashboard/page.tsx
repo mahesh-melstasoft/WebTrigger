@@ -274,13 +274,12 @@ export default function Dashboard() {
                                     {notifications.slice(0, 5).map((notification, index) => (
                                         <div
                                             key={`${notification.timestamp}-${index}`}
-                                            className={`flex items-start gap-3 p-3 rounded-lg text-sm ${
-                                                notification.type === 'webhook_success'
+                                            className={`flex items-start gap-3 p-3 rounded-lg text-sm ${notification.type === 'webhook_success'
                                                     ? 'bg-green-50 border border-green-200'
                                                     : notification.type === 'webhook_failure'
-                                                    ? 'bg-red-50 border border-red-200'
-                                                    : 'bg-gray-50 border border-gray-200'
-                                            }`}
+                                                        ? 'bg-red-50 border border-red-200'
+                                                        : 'bg-gray-50 border border-gray-200'
+                                                }`}
                                         >
                                             {notification.type === 'webhook_success' ? (
                                                 <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />

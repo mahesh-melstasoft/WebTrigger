@@ -344,20 +344,53 @@ export class NotificationOrchestrator {
 
     // Send WhatsApp Notifications (PAID SUBSCRIPTION REQUIRED)
     if (hasPaidSubscription && settings.whatsappEnabled && settings.whatsappNumbers.length > 0 &&
-        ((isSuccess && settings.whatsappOnSuccess) || (!isSuccess && settings.whatsappOnFailure))) {
+      ((isSuccess && settings.whatsappOnSuccess) || (!isSuccess && settings.whatsappOnFailure))) {
       await this.whatsappService.sendNotification(settings.whatsappNumbers, payload);
     }
 
     // Send Telegram Notifications
     if (settings.telegramEnabled && settings.telegramChatIds.length > 0 &&
-        ((isSuccess && settings.telegramOnSuccess) || (!isSuccess && settings.telegramOnFailure))) {
+      ((isSuccess && settings.telegramOnSuccess) || (!isSuccess && settings.telegramOnFailure))) {
       await this.telegramService.sendNotification(settings.telegramChatIds, payload);
     }
 
     // Send SMS Notifications (PAID SUBSCRIPTION REQUIRED)
     if (hasPaidSubscription && settings.smsEnabled && settings.smsNumbers.length > 0 &&
-        ((isSuccess && settings.smsOnSuccess) || (!isSuccess && settings.smsOnFailure))) {
+      ((isSuccess && settings.smsOnSuccess) || (!isSuccess && settings.smsOnFailure))) {
       await this.smsService.sendNotification(settings.smsNumbers, payload);
+    }
+  }
+
+  // Send a push notification to a user's stored web push subscription (if present)
+  public async sendPushToUser(userId: string, payload: NotificationPayload): Promise<boolean> {
+    try {
+      const subscription = await prisma.pushSubscription.findUnique({ where: { userId } });
+      if (!subscription) return false;
+
+      // Import sendPush dynamically to avoid loading web-push in non-server contexts
+      const { sendPush } = await import('./webpush');
+
+      try {
+        await sendPush({ endpoint: subscription.endpoint, p256dhKey: subscription.p256dhKey, authKey: subscription.authKey }, payload);
+        return true;
+      } catch (err: unknown) {
+        // If subscription is gone (410) or invalid, remove it
+        const errObj = typeof err === 'object' && err ? (err as Record<string, unknown>) : null;
+        const status = errObj && 'statusCode' in errObj ? (errObj['statusCode'] as number | undefined) : undefined;
+        // web-push library may expose statusCode or cause with 410; be conservative
+        if (status === 410 || (errObj && ('status' in errObj) && errObj['status'] === 410)) {
+          try {
+            await prisma.pushSubscription.deleteMany({ where: { userId } });
+          } catch (delErr) {
+            console.warn('Failed to delete stale push subscription:', delErr);
+          }
+        }
+        console.error('Failed to send push to user:', err);
+        return false;
+      }
+    } catch (error) {
+      console.error('sendPushToUser error:', error);
+      return false;
     }
   }
 

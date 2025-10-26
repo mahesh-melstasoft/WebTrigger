@@ -25,14 +25,14 @@ model User {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  callbacks          Callback[]
-  rateLimitLogs      RateLimitLog[]
-  apiKeys            ApiKey[]
-  actions            Action[]
-  serviceCredentials ServiceCredential[]
+  callbacks            Callback[]
+  rateLimitLogs        RateLimitLog[]
+  apiKeys              ApiKey[]
+  actions              Action[]
+  serviceCredentials   ServiceCredential[]
   notificationSettings NotificationSettings?
-  emailTemplates     EmailTemplate[]
-  pushSubscription   PushSubscription?
+  emailTemplates       EmailTemplate[]
+  pushSubscription     PushSubscription?
 }
 
 enum UserRole {
@@ -371,65 +371,65 @@ enum ServiceProvider {
 
 // Notification Settings per User
 model NotificationSettings {
-  id                    String   @id @default(cuid())
-  userId                String   @unique
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   // Email Settings
-  emailEnabled          Boolean  @default(true)
-  emailRecipients       String[] // Additional email addresses based on plan
-  emailOnSuccess        Boolean  @default(true)
-  emailOnFailure        Boolean  @default(true)
-  
+  emailEnabled    Boolean  @default(true)
+  emailRecipients String[] // Additional email addresses based on plan
+  emailOnSuccess  Boolean  @default(true)
+  emailOnFailure  Boolean  @default(true)
+
   // WhatsApp Settings
-  whatsappEnabled       Boolean  @default(false)
-  whatsappNumbers       String[] // Phone numbers to notify
-  whatsappOnSuccess     Boolean  @default(false)
-  whatsappOnFailure     Boolean  @default(true)
-  
+  whatsappEnabled   Boolean  @default(false)
+  whatsappNumbers   String[] // Phone numbers to notify
+  whatsappOnSuccess Boolean  @default(false)
+  whatsappOnFailure Boolean  @default(true)
+
   // Telegram Settings
-  telegramEnabled       Boolean  @default(false)
-  telegramChatIds       String[] // Telegram chat IDs
-  telegramOnSuccess     Boolean  @default(false)
-  telegramOnFailure     Boolean  @default(true)
-  
+  telegramEnabled   Boolean  @default(false)
+  telegramChatIds   String[] // Telegram chat IDs
+  telegramOnSuccess Boolean  @default(false)
+  telegramOnFailure Boolean  @default(true)
+
   // SMS Settings  
-  smsEnabled            Boolean  @default(false)
-  smsNumbers            String[] // Phone numbers for SMS
-  smsOnSuccess          Boolean  @default(false)
-  smsOnFailure          Boolean  @default(true)
-  
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  smsEnabled   Boolean  @default(false)
+  smsNumbers   String[] // Phone numbers for SMS
+  smsOnSuccess Boolean  @default(false)
+  smsOnFailure Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // Email Templates for Notifications
 model EmailTemplate {
-  id          String              @id @default(cuid())
-  userId      String
-  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name        String
-  type        NotificationType
-  subject     String
-  htmlBody    String              @db.Text
-  textBody    String?             @db.Text
-  isDefault   Boolean             @default(false)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  type      NotificationType
+  subject   String
+  htmlBody  String           @db.Text
+  textBody  String?          @db.Text
+  isDefault Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
   @@unique([userId, name])
 }
 
 // Push Notification Subscriptions for PWA
 model PushSubscription {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  endpoint    String
-  p256dhKey   String
-  authKey     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String
+  p256dhKey String
+  authKey   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 enum NotificationType {

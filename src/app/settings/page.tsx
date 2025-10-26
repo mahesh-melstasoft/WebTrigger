@@ -23,6 +23,7 @@ import {
     Shield,
     CreditCard,
     QrCode,
+    Bell,
     MessageSquare,
     Key,
     Plus,
@@ -35,6 +36,7 @@ import {
     Database,
 } from 'lucide-react';
 import Image from 'next/image';
+import { usePushNotifications } from '@/lib/pushNotifications';
 import { ApiKey } from '@/generated/prisma';
 
 interface UserSettings {
@@ -161,6 +163,7 @@ export default function SettingsPage() {
     const [notificationSettings, setNotificationSettings] = useState<NotificationSettings | null>(null);
     const [loadingNotifications, setLoadingNotifications] = useState(false);
     const [savingNotifications, setSavingNotifications] = useState(false);
+    const pushNotifications = usePushNotifications();
     const router = useRouter();
 
     const fetchApiKeys = useCallback(async () => {
@@ -1094,6 +1097,48 @@ export default function SettingsPage() {
                                             </CardContent>
                                         </Card>
 
+                                        {/* Push Notifications - new card */}
+                                        <Card className="border-gray-200">
+                                            <CardHeader className="pb-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-2">
+                                                        <Bell className="h-5 w-5 text-indigo-500" />
+                                                        <CardTitle className="text-lg">Push Notifications (PWA)</CardTitle>
+                                                    </div>
+                                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                                                        {pushNotifications.isSupported ? 'Supported' : 'Not supported'}
+                                                    </Badge>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div>
+                                                        <p className="text-sm text-gray-600">Permission: <strong className="ml-1">{pushNotifications.permission}</strong></p>
+                                                        <p className="text-sm text-gray-600">Subscription: <strong className="ml-1">{pushNotifications.isSubscribed ? 'Enabled' : 'Not subscribed'}</strong></p>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        {pushNotifications.isSubscribed ? (
+                                                            <Button variant="destructive" onClick={() => pushNotifications.disablePushNotifications()} disabled={pushNotifications.isLoading}>
+                                                                Disable
+                                                            </Button>
+                                                        ) : (
+                                                            <>
+                                                                <Button onClick={() => pushNotifications.requestPermission()} disabled={pushNotifications.isLoading || !pushNotifications.isSupported}>
+                                                                    {pushNotifications.permission === 'default' ? 'Request Permission' : 'Enable'}
+                                                                </Button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {pushNotifications.error && (
+                                                    <Alert>
+                                                        <AlertDescription>{pushNotifications.error}</AlertDescription>
+                                                    </Alert>
+                                                )}
+                                            </CardContent>
+                                        </Card>
+
                                         {/* WhatsApp Notifications */}
                                         <Card className={`border-gray-200 ${notificationSettings.subscriptionRequired.whatsapp ? 'opacity-75' : ''}`}>
                                             <CardHeader className="pb-3">
@@ -1136,6 +1181,33 @@ export default function SettingsPage() {
                                                             />
                                                             <Label htmlFor="whatsappEnabled">Enable WhatsApp notifications</Label>
                                                         </div>
+
+                                                        {/* Setup CTA: If no TWILIO credential exists, show a setup button */}
+                                                        {!serviceCredentials.find(c => c.provider === 'TWILIO') && (
+                                                            <div className="mt-3">
+                                                                <Alert>
+                                                                    <MessageSquare className="h-4 w-4" />
+                                                                    <AlertDescription>
+                                                                        No Twilio credential found. Click below to add one and enable WhatsApp messaging.
+                                                                    </AlertDescription>
+                                                                </Alert>
+                                                                <div className="mt-2 flex gap-2">
+                                                                    <Button
+                                                                        onClick={() => {
+                                                                            setNewCredentialProvider('TWILIO');
+                                                                            setShowCreateCredential(true);
+                                                                            // focus name input shortly after opening
+                                                                            setTimeout(() => {
+                                                                                const el = document.getElementById('credName') as HTMLInputElement | null;
+                                                                                el?.focus();
+                                                                            }, 200);
+                                                                        }}
+                                                                    >
+                                                                        Setup WhatsApp (Twilio)
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        )}
 
                                                         {notificationSettings.whatsappEnabled && (
                                                             <>
@@ -1182,6 +1254,37 @@ export default function SettingsPage() {
                                                                 </div>
                                                             </>
                                                         )}
+
+                                                        <div className="mt-4 flex gap-2">
+                                                            <Button
+                                                                onClick={async () => {
+                                                                    setError('');
+                                                                    setSuccess('');
+                                                                    const token = localStorage.getItem('token');
+                                                                    try {
+                                                                        const resp = await fetch('/api/notifications/whatsapp/test', {
+                                                                            method: 'POST',
+                                                                            headers: {
+                                                                                'Content-Type': 'application/json',
+                                                                                Authorization: `Bearer ${token}`,
+                                                                            },
+                                                                            body: JSON.stringify({ phone: notificationSettings.whatsappNumbers[0] || undefined })
+                                                                        });
+                                                                        if (resp.ok) {
+                                                                            setSuccess('WhatsApp test message queued/sent successfully');
+                                                                        } else {
+                                                                            const data = await resp.json().catch(() => ({}));
+                                                                            setError(data.error || 'Failed to send test message');
+                                                                        }
+                                                                    } catch (err) {
+                                                                        console.error('WhatsApp test err:', err);
+                                                                        setError('Failed to send test message');
+                                                                    }
+                                                                }}
+                                                            >
+                                                                Send Test Message
+                                                            </Button>
+                                                        </div>
                                                     </>
                                                 )}
                                             </CardContent>

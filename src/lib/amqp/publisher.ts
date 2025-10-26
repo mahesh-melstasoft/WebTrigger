@@ -72,14 +72,14 @@ export class AmqpPublisher {
             throw new Error('Invalid AMQP broker URL. Must start with amqp:// or amqps://');
         }
 
-    this.brokerUrl = brokerUrl;
-    this.brokerId = `broker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        this.brokerUrl = brokerUrl;
+        this.brokerId = `broker_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // mark crypto helpers as used (no-op) to satisfy lint until they are required
-    void decryptSecret;
-    void encryptSecret;
-    // acknowledge unused _options to satisfy linter when options are intentionally unused
-    void _options;
+        // mark crypto helpers as used (no-op) to satisfy lint until they are required
+        void decryptSecret;
+        void encryptSecret;
+        // acknowledge unused _options to satisfy linter when options are intentionally unused
+        void _options;
 
         try {
             const pool = getGlobalAmqpPool();
@@ -245,10 +245,10 @@ export class AmqpPublisher {
                 // Declare exchange
                 const exchangeType: 'direct' | 'topic' | 'fanout' | 'headers' =
                     options.exchange.includes('fanout')
-                    ? 'fanout'
-                    : options.exchange.includes('direct')
-                        ? 'direct'
-                        : 'topic';
+                        ? 'fanout'
+                        : options.exchange.includes('direct')
+                            ? 'direct'
+                            : 'topic';
 
                 await this.client.declareExchange(resolvedExchange, exchangeType, {
                     durable: true,

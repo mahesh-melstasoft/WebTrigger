@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
         const newUserRole = newPlan.name.toLowerCase().includes('admin') ? 'ADMIN' :
             newPlan.name.toLowerCase().includes('pro') ? 'PRO' :
-            newPlan.name.toLowerCase().includes('starter') ? 'PREMIUM' : 'FREE';
+                newPlan.name.toLowerCase().includes('starter') ? 'PREMIUM' : 'FREE';
 
         await prisma.user.update({
             where: { id: authResult.user!.id },

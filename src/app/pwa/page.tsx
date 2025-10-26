@@ -187,10 +187,10 @@ export default function PWAPage() {
                                     <span className="text-sm font-medium">Notification Permission</span>
                                     <Badge variant={
                                         notificationPermission === 'granted' ? 'default' :
-                                        notificationPermission === 'denied' ? 'destructive' : 'secondary'
+                                            notificationPermission === 'denied' ? 'destructive' : 'secondary'
                                     }>
                                         {notificationPermission === 'granted' ? 'Granted' :
-                                         notificationPermission === 'denied' ? 'Denied' : 'Not Set'}
+                                            notificationPermission === 'denied' ? 'Denied' : 'Not Set'}
                                     </Badge>
                                 </div>
                                 {notificationPermission !== 'granted' && (
@@ -248,11 +248,11 @@ export default function PWAPage() {
                                             <span className="text-sm font-medium">Push Notifications</span>
                                             <Badge variant={
                                                 pushNotifications.isSubscribed ? 'default' :
-                                                pushNotifications.permission === 'denied' ? 'destructive' : 'secondary'
+                                                    pushNotifications.permission === 'denied' ? 'destructive' : 'secondary'
                                             }>
                                                 {pushNotifications.isSubscribed ? 'Enabled' :
-                                                 pushNotifications.permission === 'denied' ? 'Blocked' :
-                                                 'Not Set'}
+                                                    pushNotifications.permission === 'denied' ? 'Blocked' :
+                                                        'Not Set'}
                                             </Badge>
                                         </div>
                                         <div className="flex items-center gap-2">
