@@ -400,9 +400,9 @@ model NotificationSettings {
   smsOnFailure Boolean  @default(true)
 
   // Push Notification Settings
-  pushEnabled   Boolean  @default(false)
-  pushOnSuccess Boolean  @default(false)
-  pushOnFailure Boolean  @default(true)
+  pushEnabled   Boolean @default(false)
+  pushOnSuccess Boolean @default(false)
+  pushOnFailure Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
